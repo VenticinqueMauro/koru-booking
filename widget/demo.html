@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koru Booking Widget - Demo</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .demo-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .demo-header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+    .demo-header h1 {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+    .demo-header p {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    #widget-root {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>🗓️ Koru Booking Widget</h1>
+      <p>Sistema de reservas en tiempo real</p>
+    </div>
+    
+    <div id="widget-root"></div>
+  </div>
+
+  <!-- Widget Script -->
+  <script
+    type="module"
+    src="/src/index.ts"
+    data-website-id="ws_demo"
+    data-app-id="app_demo"
+    data-app-manager-url="https://app.koru.com"
+  ></script>
+</body>
+</html>

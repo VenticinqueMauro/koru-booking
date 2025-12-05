@@ -1,0 +1,9 @@
+import { Router } from 'express';
+import { schedulesController } from '../controllers/SchedulesController.js';
+
+const router = Router();
+
+router.get('/', (req, res) => schedulesController.getAll(req, res));
+router.post('/', (req, res) => schedulesController.createOrUpdate(req, res));
+
+export default router;

@@ -1,0 +1,70 @@
+// Prisma Schema para Koru Booking
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id        String    @id @default(uuid())
+  name      String
+  duration  Int       // minutos
+  price     Decimal?  @db.Decimal(10, 2)
+  buffer    Int       @default(0) // minutos de preparación post-servicio
+  imageUrl  String?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
+
+  @@index([active])
+}
+
+model Schedule {
+  id         String   @id @default(uuid())
+  dayOfWeek  Int      // 0-6 (Domingo-Sábado)
+  enabled    Boolean  @default(true)
+  startTime  String   // "09:00"
+  endTime    String   // "18:00"
+  breakStart String?  // "13:00" (opcional)
+  breakEnd   String?  // "14:00" (opcional)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([dayOfWeek])
+  @@index([enabled])
+}
+
+model Booking {
+  id            String   @id @default(uuid())
+  serviceId     String
+  service       Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  date          DateTime @db.Date // Solo fecha
+  time          String   // "10:00"
+  notes         String?  @db.Text
+  status        String   @default("confirmed") // confirmed, cancelled, completed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([serviceId, date, time]) // Prevenir duplicados
+  @@index([date])
+  @@index([status])
+}
+
+model WidgetSettings {
+  id           String   @id @default(uuid())
+  layout       String   @default("list") // list, grid, button
+  stepInterval Int      @default(30) // minutos
+  accentColor  String   @default("#00C896")
+  notifyEmail  String
+  timezone     String   @default("America/Mexico_City")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
