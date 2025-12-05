@@ -16,7 +16,7 @@ interface BookingWidgetConfig extends WidgetConfig {
 type Step = 'service' | 'datetime' | 'form' | 'confirmation';
 
 export class BookingWidget extends KoruWidget {
-  private container: HTMLDivElement | null = null;
+  private widgetContainer: HTMLDivElement | null = null;
   private currentStep: Step = 'service';
   private services: Service[] = [];
   private selectedService: Service | null = null;
@@ -42,9 +42,40 @@ export class BookingWidget extends KoruWidget {
     });
   }
 
+  /**
+   * Override start to bypass Koru SDK authentication in development
+   */
+  async start(): Promise<void> {
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (isDev) {
+      this.log('🚀 Development mode detected: Bypassing Koru SDK auth');
+
+      const mockConfig: BookingWidgetConfig = {
+        elementId: 'koru-widget-dev',
+        settings: {},
+        // Mock config for dev
+        accentColor: '#00C896',
+        layout: 'list',
+        stepInterval: 30,
+      };
+
+      try {
+        await this.onInit(mockConfig);
+        await this.onRender(mockConfig);
+      } catch (error) {
+        console.error('Error starting widget in dev mode:', error);
+      }
+      return;
+    }
+
+    // In production, delegate to Koru SDK
+    return super.start();
+  }
+
   async onInit(config: WidgetConfig): Promise<void> {
     this.log('Booking Widget initialized', config);
-    
+
     // Cargar servicios
     try {
       this.services = await apiClient.getServices();
@@ -59,7 +90,7 @@ export class BookingWidget extends KoruWidget {
     const typedConfig = config as BookingWidgetConfig;
 
     // Crear contenedor principal
-    this.container = this.createElement('div', {
+    this.widgetContainer = this.createElement('div', {
       className: 'koru-booking-widget',
       style: {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -69,17 +100,17 @@ export class BookingWidget extends KoruWidget {
         backgroundColor: '#fff',
         borderRadius: '12px',
         boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-      },
+      } as any,
     });
 
-    document.body.appendChild(this.container);
+    document.body.appendChild(this.widgetContainer);
 
     // Renderizar paso inicial
     await this.renderStep(typedConfig);
   }
 
   private async renderStep(config: BookingWidgetConfig): Promise<void> {
-    if (!this.container) return;
+    if (!this.widgetContainer) return;
 
     // Limpiar componentes anteriores
     this.clearCurrentComponent();
@@ -89,8 +120,8 @@ export class BookingWidget extends KoruWidget {
       className: 'kb-step-container',
     });
 
-    this.container.innerHTML = '';
-    this.container.appendChild(stepContainer);
+    this.widgetContainer.innerHTML = '';
+    this.widgetContainer.appendChild(stepContainer);
 
     const accentColor = config.accentColor || '#00C896';
     const layout = config.layout || 'list';
@@ -173,7 +204,7 @@ export class BookingWidget extends KoruWidget {
   private async handleFormSubmit(data: CustomerData, config: BookingWidgetConfig): Promise<void> {
     this.log('Form submitted', data);
 
-    if (!this.selectedService || !this.container) return;
+    if (!this.selectedService || !this.widgetContainer) return;
 
     // Mostrar loading
     this.showLoading();
@@ -217,9 +248,9 @@ export class BookingWidget extends KoruWidget {
   }
 
   private showLoading(): void {
-    if (!this.container) return;
+    if (!this.widgetContainer) return;
 
-    this.container.innerHTML = `
+    this.widgetContainer.innerHTML = `
       <div class="kb-loading-overlay">
         <div class="kb-spinner"></div>
         <p>Procesando tu reserva...</p>
@@ -228,7 +259,7 @@ export class BookingWidget extends KoruWidget {
   }
 
   private showError(message: string): void {
-    if (!this.container) return;
+    if (!this.widgetContainer) return;
 
     const errorDiv = this.createElement('div', {
       className: 'kb-error-message',
@@ -239,12 +270,12 @@ export class BookingWidget extends KoruWidget {
         borderRadius: '8px',
         color: '#c33',
         textAlign: 'center',
-      },
-      children: [message],
+      } as any,
     });
+    errorDiv.textContent = message;
 
-    this.container.innerHTML = '';
-    this.container.appendChild(errorDiv);
+    this.widgetContainer.innerHTML = '';
+    this.widgetContainer.appendChild(errorDiv);
 
     setTimeout(() => {
       if (this.config) {
@@ -255,8 +286,8 @@ export class BookingWidget extends KoruWidget {
 
   async onDestroy(): Promise<void> {
     this.clearCurrentComponent();
-    this.container?.remove();
-    this.container = null;
+    this.widgetContainer?.remove();
+    this.widgetContainer = null;
     this.log('Widget destroyed');
   }
 

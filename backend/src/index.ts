@@ -8,6 +8,7 @@ import servicesRoutes from './routes/services.js';
 import bookingsRoutes from './routes/bookings.js';
 import slotsRoutes from './routes/slots.js';
 import schedulesRoutes from './routes/schedules.js';
+import settingsRoutes from './routes/settings.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -27,6 +28,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/slots', slotsRoutes);
 app.use('/api/schedules', schedulesRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Error handler (debe ir al final)
 app.use(errorHandler);

@@ -18,72 +18,60 @@ export class Confirmation {
     this.container = document.createElement('div');
     this.container.className = 'kb-confirmation';
 
-    // Icono de éxito
+    // Success Icon
     const icon = document.createElement('div');
     icon.className = 'kb-success-icon';
     icon.innerHTML = '✓';
-    icon.style.backgroundColor = this.options.accentColor;
     this.container.appendChild(icon);
 
-    // Título
+    // Title
     const title = document.createElement('h2');
     title.className = 'kb-confirmation-title';
     title.textContent = '¡Reserva Confirmada!';
     this.container.appendChild(title);
 
-    // Mensaje
+    // Message
     const message = document.createElement('p');
     message.className = 'kb-confirmation-message';
-    message.textContent = 'Te hemos enviado un email de confirmación con todos los detalles.';
+    message.innerHTML = `Hemos enviado los detalles a <strong>${this.options.booking.customerEmail}</strong>`;
     this.container.appendChild(message);
 
-    // Detalles de la reserva
+    // Details Box
     const details = document.createElement('div');
-    details.className = 'kb-confirmation-details';
+    details.className = 'kb-booking-summary';
     details.innerHTML = `
-      <div class="kb-detail-row">
-        <span class="kb-detail-label">Servicio:</span>
-        <span class="kb-detail-value">${this.options.booking.serviceName}</span>
+      <div class="kb-summary-item">
+        <strong>Servicio</strong>
+        ${this.options.booking.serviceName}
       </div>
-      <div class="kb-detail-row">
-        <span class="kb-detail-label">Fecha:</span>
-        <span class="kb-detail-value">${this.formatDisplayDate(this.options.booking.date)}</span>
+      <div class="kb-summary-item">
+        <strong>Fecha</strong>
+        ${this.formatDisplayDate(this.options.booking.date)}
       </div>
-      <div class="kb-detail-row">
-        <span class="kb-detail-label">Hora:</span>
-        <span class="kb-detail-value">${this.options.booking.time}</span>
-      </div>
-      <div class="kb-detail-row">
-        <span class="kb-detail-label">Cliente:</span>
-        <span class="kb-detail-value">${this.options.booking.customerName}</span>
-      </div>
-      <div class="kb-detail-row">
-        <span class="kb-detail-label">Email:</span>
-        <span class="kb-detail-value">${this.options.booking.customerEmail}</span>
+      <div class="kb-summary-item">
+        <strong>Hora</strong>
+        ${this.options.booking.time}
       </div>
     `;
     this.container.appendChild(details);
 
-    // Botones de acción
+    // Actions
     const actions = document.createElement('div');
     actions.className = 'kb-confirmation-actions';
 
-    // Botón añadir a calendario
     const calendarBtn = document.createElement('a');
-    calendarBtn.className = 'kb-calendar-button';
-    calendarBtn.textContent = '📅 Añadir a Calendario';
+    calendarBtn.className = 'kb-button-outline';
+    calendarBtn.textContent = '📅 Agregar a Calendario';
     calendarBtn.href = this.generateCalendarLink();
     calendarBtn.target = '_blank';
-    calendarBtn.style.borderColor = this.options.accentColor;
-    calendarBtn.style.color = this.options.accentColor;
     actions.appendChild(calendarBtn);
 
-    // Botón cerrar
     const closeBtn = document.createElement('button');
-    closeBtn.className = 'kb-close-button';
-    closeBtn.textContent = 'Cerrar';
-    closeBtn.style.backgroundColor = this.options.accentColor;
+    closeBtn.className = 'kb-submit-button';
+    closeBtn.textContent = 'Nueva Reserva';
     closeBtn.onclick = () => this.options.onClose();
+    closeBtn.style.marginTop = '0'; // Override default margin
+    closeBtn.style.backgroundColor = this.options.accentColor;
     actions.appendChild(closeBtn);
 
     this.container.appendChild(actions);
@@ -92,11 +80,11 @@ export class Confirmation {
 
   private formatDisplayDate(dateString: string): string {
     const date = new Date(dateString + 'T00:00:00');
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     };
     return date.toLocaleDateString('es-ES', options);
   }

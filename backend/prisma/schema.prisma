@@ -5,15 +5,15 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model Service {
   id        String    @id @default(uuid())
   name      String
   duration  Int       // minutos
-  price     Decimal?  @db.Decimal(10, 2)
+  price     Decimal?
   buffer    Int       @default(0) // minutos de preparación post-servicio
   imageUrl  String?
   active    Boolean   @default(true)
@@ -46,9 +46,9 @@ model Booking {
   customerName  String
   customerEmail String
   customerPhone String?
-  date          DateTime @db.Date // Solo fecha
+  date          DateTime // Solo fecha
   time          String   // "10:00"
-  notes         String?  @db.Text
+  notes         String?
   status        String   @default("confirmed") // confirmed, cancelled, completed
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
