@@ -1,4 +1,3 @@
-import { KoruWidget, WidgetConfig } from '@redclover/koru-sdk';
 import { apiClient, Service, BookingResponse } from './api/client';
 import { ServiceSelector } from './components/ServiceSelector';
 import { DateTimePicker } from './components/DateTimePicker';
@@ -6,7 +5,7 @@ import { CustomerForm, CustomerData } from './components/CustomerForm';
 import { Confirmation } from './components/Confirmation';
 import './styles/widget.css';
 
-interface BookingWidgetConfig extends WidgetConfig {
+export interface BookingWidgetConfig {
   layout?: 'list' | 'grid' | 'button';
   stepInterval?: number;
   accentColor?: string;
@@ -15,7 +14,7 @@ interface BookingWidgetConfig extends WidgetConfig {
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmation';
 
-export class BookingWidget extends KoruWidget {
+export class BookingWidget {
   private widgetContainer: HTMLDivElement | null = null;
   private currentStep: Step = 'service';
   private services: Service[] = [];
@@ -23,6 +22,7 @@ export class BookingWidget extends KoruWidget {
   private selectedDate: string = '';
   private selectedTime: string = '';
   private bookingResult: BookingResponse | null = null;
+  private config: BookingWidgetConfig | null = null;
 
   // Componentes
   private serviceSelector: ServiceSelector | null = null;
@@ -31,65 +31,97 @@ export class BookingWidget extends KoruWidget {
   private confirmation: Confirmation | null = null;
 
   constructor() {
-    super({
-      name: 'koru-booking-widget',
-      version: '1.0.0',
-      options: {
-        cache: true,
-        debug: true,
-        analytics: false,
-      },
-    });
+    console.log('📦 BookingWidget constructor called');
+  }
+
+  /**
+   * Helper method to create DOM elements
+   */
+  private createElement<K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    options?: { className?: string; style?: Partial<CSSStyleDeclaration> }
+  ): HTMLElementTagNameMap[K] {
+    const element = document.createElement(tag);
+    if (options?.className) {
+      element.className = options.className;
+    }
+    if (options?.style) {
+      Object.assign(element.style, options.style);
+    }
+    return element;
+  }
+
+  /**
+   * Helper method for logging
+   */
+  private log(...args: any[]): void {
+    console.log('[BookingWidget]', ...args);
+  }
+
+  /**
+   * Helper method for tracking (stub for now)
+   */
+  private track(event: string, data?: any): void {
+    console.log('[Analytics]', event, data);
   }
 
   /**
    * Override start to bypass Koru SDK authentication in development
    */
   async start(): Promise<void> {
+    console.log('🚀 BookingWidget.start() called');
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    console.log('isDev:', isDev);
 
     if (isDev) {
       this.log('🚀 Development mode detected: Bypassing Koru SDK auth');
 
       const mockConfig: BookingWidgetConfig = {
-        elementId: 'koru-widget-dev',
-        settings: {},
-        // Mock config for dev
         accentColor: '#00C896',
         layout: 'list',
         stepInterval: 30,
       };
 
       try {
+        console.log('Calling onInit...');
         await this.onInit(mockConfig);
+        console.log('onInit completed, calling onRender...');
         await this.onRender(mockConfig);
+        console.log('onRender completed');
       } catch (error) {
         console.error('Error starting widget in dev mode:', error);
       }
       return;
     }
 
-    // In production, delegate to Koru SDK
-    return super.start();
+    // In production, would delegate to Koru SDK
+    // For now, just log a warning
+    console.warn('Production mode not implemented yet');
   }
 
-  async onInit(config: WidgetConfig): Promise<void> {
+  async onInit(config: BookingWidgetConfig): Promise<void> {
+    console.log('📝 onInit called with config:', config);
     this.log('Booking Widget initialized', config);
 
     // Cargar servicios
     try {
+      console.log('Fetching services from API...');
       this.services = await apiClient.getServices();
+      console.log('Services loaded:', this.services);
       this.log('Services loaded', this.services);
     } catch (error) {
+      console.error('Error loading services:', error);
       this.log('Error loading services', error);
       throw error;
     }
   }
 
-  async onRender(config: WidgetConfig): Promise<void> {
+  async onRender(config: BookingWidgetConfig): Promise<void> {
+    console.log('🎨 onRender called');
     const typedConfig = config as BookingWidgetConfig;
 
     // Crear contenedor principal
+    console.log('Creating widget container...');
     this.widgetContainer = this.createElement('div', {
       className: 'koru-booking-widget',
       style: {
@@ -102,11 +134,18 @@ export class BookingWidget extends KoruWidget {
         boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
       } as any,
     });
+    console.log('Widget container created:', this.widgetContainer);
 
-    document.body.appendChild(this.widgetContainer);
+    // Buscar el contenedor #widget-root o usar body
+    const targetElement = document.getElementById('widget-root') || document.body;
+    console.log('Target element:', targetElement);
+    targetElement.appendChild(this.widgetContainer);
+    console.log('Widget container appended to target');
 
     // Renderizar paso inicial
+    console.log('Calling renderStep...');
     await this.renderStep(typedConfig);
+    console.log('renderStep completed');
   }
 
   private async renderStep(config: BookingWidgetConfig): Promise<void> {
@@ -291,8 +330,8 @@ export class BookingWidget extends KoruWidget {
     this.log('Widget destroyed');
   }
 
-  async onConfigUpdate(config: WidgetConfig): Promise<void> {
+  async onConfigUpdate(config: BookingWidgetConfig): Promise<void> {
     this.log('Config updated', config);
-    await this.renderStep(config as BookingWidgetConfig);
+    await this.renderStep(config);
   }
 }
