@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { servicesApi } from '../api/services';
 import { Service, CreateServiceInput } from '../types';
+import { Layout } from '../components/Layout';
+import { Button, Card, Input, Badge } from '../components/ui';
+import './Services.css';
 
 export default function Services() {
   const queryClient = useQueryClient();
@@ -36,69 +39,108 @@ export default function Services() {
     setIsEditing(true);
   };
 
-  if (isLoading) return <div>Cargando servicios...</div>;
-  if (error) return <div>Error al cargar servicios</div>;
-
-  /* Lint Fix: ID: de2c606a-078a-465c-8fa6-d9e215b9b3c9 */
   const services = response || [];
 
-  return (
-    <div style={{ padding: '40px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1>🛠️ Gestión de Servicios</h1>
-        <button
-          onClick={handleCreate}
-          style={{ padding: '10px 20px', backgroundColor: '#00C896', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          {isEditing ? 'Cancelar' : 'Nuevo Servicio'}
-        </button>
-      </div>
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="services-loading">Cargando servicios...</div>
+      </Layout>
+    );
+  }
 
-      {isEditing ? (
-        <ServiceForm
-          service={editingService}
-          onCancel={() => setIsEditing(false)}
-          onSuccess={() => {
-            setIsEditing(false);
-            queryClient.invalidateQueries({ queryKey: ['services'] });
-          }}
-        />
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-          {services.map((service) => (
-            <div key={service.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '20px', backgroundColor: 'white' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <h3 style={{ marginTop: 0 }}>{service.name}</h3>
-                <span style={{
-                  backgroundColor: service.active ? '#e6fffa' : '#fff5f5',
-                  color: service.active ? '#047857' : '#c53030',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '0.8em'
-                }}>
-                  {service.active ? 'Activo' : 'Inactivo'}
-                </span>
-              </div>
-              <p>⏱️ {service.duration} mins | 💵 ${service.price || 0}</p>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                <button
-                  onClick={() => handleEdit(service)}
-                  style={{ padding: '5px 10px', cursor: 'pointer' }}
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(service.id)}
-                  style={{ padding: '5px 10px', cursor: 'pointer', backgroundColor: '#fff5f5', color: '#c53030', border: '1px solid #c53030' }}
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+  if (error) {
+    return (
+      <Layout>
+        <div className="services-error">Error al cargar servicios</div>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="services">
+        <header className="services-header">
+          <div>
+            <h1 className="page-title">Gestión de Servicios</h1>
+            <p className="page-subtitle">
+              Administra los servicios que ofreces a tus clientes
+            </p>
+          </div>
+          <Button
+            variant={isEditing ? 'outline' : 'primary'}
+            size="md"
+            onClick={isEditing ? () => setIsEditing(false) : handleCreate}
+          >
+            {isEditing ? 'Cancelar' : '+ Nuevo Servicio'}
+          </Button>
+        </header>
+
+        {isEditing ? (
+          <ServiceForm
+            service={editingService}
+            onCancel={() => setIsEditing(false)}
+            onSuccess={() => {
+              setIsEditing(false);
+              queryClient.invalidateQueries({ queryKey: ['services'] });
+            }}
+          />
+        ) : (
+          <div className="services-grid">
+            {services.length === 0 ? (
+              <Card padding="lg" className="services-empty">
+                <p>No hay servicios registrados. Crea tu primer servicio.</p>
+              </Card>
+            ) : (
+              services.map((service) => (
+                <Card key={service.id} padding="lg" className="service-card">
+                  <div className="service-card-header">
+                    <h3 className="service-card-title">{service.name}</h3>
+                    <Badge variant={service.active ? 'success' : 'error'}>
+                      {service.active ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </div>
+
+                  <div className="service-card-details">
+                    <div className="service-detail">
+                      <span className="service-detail-label">Duración</span>
+                      <span className="service-detail-value">{service.duration} min</span>
+                    </div>
+                    <div className="service-detail">
+                      <span className="service-detail-label">Precio</span>
+                      <span className="service-detail-value">${service.price || 0}</span>
+                    </div>
+                    {service.buffer > 0 && (
+                      <div className="service-detail">
+                        <span className="service-detail-label">Buffer</span>
+                        <span className="service-detail-value">{service.buffer} min</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="service-card-actions">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(service)}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleDelete(service.id)}
+                    >
+                      Eliminar
+                    </Button>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 }
 
@@ -129,75 +171,83 @@ function ServiceForm({ service, onCancel, onSuccess }: { service: Service | null
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: '500px', backgroundColor: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #ddd' }}>
-      <h2>{service ? 'Editar Servicio' : 'Nuevo Servicio'}</h2>
+    <Card padding="lg" className="service-form">
+      <h2 className="service-form-title">
+        {service ? 'Editar Servicio' : 'Nuevo Servicio'}
+      </h2>
 
-      <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', marginBottom: '5px' }}>Nombre</label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-          required
-        />
-      </div>
-
-      <div style={{ display: 'flex', gap: '15px', marginBottom: '15px' }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>Duración (min)</label>
-          <input
-            type="number"
-            value={formData.duration}
-            onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+      <form onSubmit={handleSubmit}>
+        <div className="service-form-grid">
+          <Input
+            label="Nombre del servicio"
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
-            min="1"
+            fullWidth
+            placeholder="Ej: Consulta general"
           />
-        </div>
-        <div style={{ flex: 1 }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>Precio ($)</label>
-          <input
+
+          <div className="service-form-row">
+            <Input
+              label="Duración (min)"
+              type="number"
+              value={formData.duration}
+              onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
+              required
+              min="1"
+              fullWidth
+            />
+            <Input
+              label="Precio ($)"
+              type="number"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+              fullWidth
+              min="0"
+            />
+          </div>
+
+          <Input
+            label="Buffer (tiempo entre citas)"
             type="number"
-            value={formData.price}
-            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-            style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+            value={formData.buffer}
+            onChange={(e) => setFormData({ ...formData, buffer: Number(e.target.value) })}
+            fullWidth
+            helperText="Tiempo de descanso entre servicios en minutos"
+            min="0"
           />
+
+          <div className="service-form-checkbox">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={formData.active}
+                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                className="checkbox-input"
+              />
+              <span>Servicio activo</span>
+            </label>
+          </div>
         </div>
-      </div>
 
-      <div style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', marginBottom: '5px' }}>Buffer (tiempo entre citas en min)</label>
-        <input
-          type="number"
-          value={formData.buffer}
-          onChange={(e) => setFormData({ ...formData, buffer: Number(e.target.value) })}
-          style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
-        />
-      </div>
+        {mutation.error && (
+          <div className="service-form-error">Error al guardar el servicio</div>
+        )}
 
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <input
-            type="checkbox"
-            checked={formData.active}
-            onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-          />
-          Activo
-        </label>
-      </div>
-
-      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-        <button type="button" onClick={onCancel} style={{ padding: '10px 20px', cursor: 'pointer' }}>Cancel</button>
-        <button
-          type="submit"
-          disabled={mutation.isPending}
-          style={{ padding: '10px 20px', backgroundColor: '#00C896', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-        >
-          {mutation.isPending ? 'Guardando...' : 'Guardar'}
-        </button>
-      </div>
-      {mutation.error && <p style={{ color: 'red' }}>Error al guardar</p>}
-    </form>
+        <div className="service-form-actions">
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={mutation.isPending}
+          >
+            {mutation.isPending ? 'Guardando...' : 'Guardar Servicio'}
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }

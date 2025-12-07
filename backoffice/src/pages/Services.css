@@ -1,0 +1,192 @@
+.services {
+  animation: fadeIn var(--transition-slow);
+}
+
+.services-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-2xl);
+  gap: var(--spacing-lg);
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.services-empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-3xl) var(--spacing-xl);
+}
+
+.services-loading,
+.services-error {
+  padding: var(--spacing-2xl);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.services-error {
+  color: var(--color-error);
+}
+
+/* Service Card */
+.service-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  transition: all var(--transition-base);
+}
+
+.service-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+.service-card-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+  flex: 1;
+  letter-spacing: -0.01em;
+}
+
+.service-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.service-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.service-detail-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+
+.service-detail-value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.service-card-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* Service Form */
+.service-form {
+  max-width: 600px;
+  animation: slideIn var(--transition-slow);
+}
+
+.service-form-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-xl) 0;
+  letter-spacing: -0.02em;
+}
+
+.service-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.service-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.service-form-checkbox {
+  padding: var(--spacing-md) 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.checkbox-input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-accent);
+}
+
+.service-form-error {
+  padding: var(--spacing-md);
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  margin-top: var(--spacing-md);
+}
+
+.service-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--color-border-light);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .services-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-form-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,68 @@
+.dashboard {
+  animation: fadeIn var(--transition-slow);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.dashboard-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.dashboard-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-height: 180px;
+  transition: all var(--transition-base);
+}
+
+.dashboard-card-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.dashboard-card-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-card-description {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.dashboard-card-arrow {
+  font-size: var(--font-size-xl);
+  color: var(--color-accent);
+  align-self: flex-end;
+  transition: transform var(--transition-base);
+}
+
+.dashboard-card-link:hover .dashboard-card-arrow {
+  transform: translateX(4px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

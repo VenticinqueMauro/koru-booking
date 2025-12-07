@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingsApi } from '../api/settings';
 import { UpdateWidgetSettingsInput, WidgetSettings } from '../types';
+import { Layout } from '../components/Layout';
+import { Card, Button, Input } from '../components/ui';
+import './Settings.css';
 
 export default function Settings() {
   const queryClient = useQueryClient();
@@ -56,95 +59,127 @@ export default function Settings() {
     mutation.mutate(formData);
   };
 
-  if (isLoading) return <div>Cargando configuración...</div>;
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="settings-loading">Cargando configuración...</div>
+      </Layout>
+    );
+  }
 
   return (
-    <div style={{ padding: '40px' }}>
-      <h1>⚙️ Configuración del Widget</h1>
-      <p>Personaliza el aspecto y comportamiento del widget de reservas.</p>
+    <Layout>
+      <div className="settings">
+        <header className="page-header">
+          <h1 className="page-title">Configuración del Widget</h1>
+          <p className="page-subtitle">
+            Personaliza el aspecto y comportamiento del widget de reservas
+          </p>
+        </header>
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: '600px', marginTop: '30px', backgroundColor: 'white', padding: '30px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+        <Card padding="lg" className="settings-form-card">
+          <form onSubmit={handleSubmit} className="settings-form">
+            <div className="settings-form-section">
+              <h3 className="settings-section-title">Apariencia</h3>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Diseño del Widget</label>
-          <select
-            name="layout"
-            value={formData.layout}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e0', borderRadius: '4px' }}
-          >
-            <option value="list">Lista</option>
-            <option value="grid">Cuadrícula</option>
-            <option value="compact">Compacto</option>
-          </select>
-        </div>
+              <div className="settings-form-grid">
+                <div className="settings-form-field">
+                  <label className="settings-label">Diseño del Widget</label>
+                  <select
+                    name="layout"
+                    value={formData.layout}
+                    onChange={handleChange}
+                    className="settings-select"
+                  >
+                    <option value="list">Lista</option>
+                    <option value="grid">Cuadrícula</option>
+                    <option value="compact">Compacto</option>
+                  </select>
+                </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Intervalo de Tiempo (minutos)</label>
-          <input
-            type="number"
-            name="stepInterval"
-            value={formData.stepInterval}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e0', borderRadius: '4px' }}
-          />
-        </div>
+                <div className="settings-form-field">
+                  <label className="settings-label">Color de Acento</label>
+                  <div className="settings-color-picker">
+                    <input
+                      type="color"
+                      name="accentColor"
+                      value={formData.accentColor}
+                      onChange={handleChange}
+                      className="settings-color-input"
+                    />
+                    <input
+                      type="text"
+                      name="accentColor"
+                      value={formData.accentColor}
+                      onChange={handleChange}
+                      className="settings-color-text"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Color de Acento</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <input
-              type="color"
-              name="accentColor"
-              value={formData.accentColor}
-              onChange={handleChange}
-              style={{ width: '50px', height: '40px', padding: '0', border: 'none' }}
-            />
-            <input
-              type="text"
-              name="accentColor"
-              value={formData.accentColor}
-              onChange={handleChange}
-              style={{ flex: 1, padding: '10px', border: '1px solid #cbd5e0', borderRadius: '4px' }}
-            />
-          </div>
-        </div>
+            <div className="settings-form-section">
+              <h3 className="settings-section-title">Configuración</h3>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Email de Notificaciones</label>
-          <input
-            type="email"
-            name="notifyEmail"
-            value={formData.notifyEmail}
-            onChange={handleChange}
-            placeholder="admin@example.com"
-            style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e0', borderRadius: '4px' }}
-          />
-        </div>
+              <div className="settings-form-grid">
+                <Input
+                  label="Intervalo de Tiempo (minutos)"
+                  type="number"
+                  name="stepInterval"
+                  value={formData.stepInterval}
+                  onChange={handleChange}
+                  fullWidth
+                  helperText="Intervalos en los que se mostrarán los horarios disponibles"
+                />
 
-        <div style={{ marginBottom: '30px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Zona Horaria</label>
-          <select
-            name="timezone"
-            value={formData.timezone}
-            onChange={handleChange}
-            style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e0', borderRadius: '4px' }}
-          >
-            <option value="America/Mexico_City">America/Mexico_City</option>
-            <option value="America/Argentina/Buenos_Aires">America/Argentina/Buenos_Aires</option>
-            <option value="UTC">UTC</option>
-          </select>
-        </div>
+                <Input
+                  label="Zona Horaria"
+                  type="text"
+                  name="timezone"
+                  value={formData.timezone}
+                  onChange={handleChange}
+                  fullWidth
+                  disabled
+                  helperText="Zona horaria para las reservas"
+                />
+              </div>
+            </div>
 
-        <button
-          type="submit"
-          disabled={mutation.isPending}
-          style={{ width: '100%', padding: '12px', backgroundColor: '#00C896', color: 'white', border: 'none', borderRadius: '4px', fontSize: '1.1em', cursor: 'pointer', opacity: mutation.isPending ? 0.7 : 1 }}
-        >
-          {mutation.isPending ? 'Guardando...' : 'Guardar Configuración'}
-        </button>
-        {error && <p style={{ color: 'red', marginTop: '10px' }}>Error al cargar la configuración</p>}
-      </form>
-    </div>
+            <div className="settings-form-section">
+              <h3 className="settings-section-title">Notificaciones</h3>
+
+              <Input
+                label="Email de Notificaciones"
+                type="email"
+                name="notifyEmail"
+                value={formData.notifyEmail}
+                onChange={handleChange}
+                placeholder="admin@example.com"
+                fullWidth
+                helperText="Recibirás notificaciones cuando se realicen nuevas reservas"
+              />
+            </div>
+
+            {error && (
+              <div className="settings-error">
+                Error al cargar la configuración
+              </div>
+            )}
+
+            <div className="settings-form-actions">
+              <Button
+                type="submit"
+                variant="primary"
+                isLoading={mutation.isPending}
+                fullWidth
+              >
+                {mutation.isPending ? 'Guardando...' : 'Guardar Configuración'}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    </Layout>
   );
 }
