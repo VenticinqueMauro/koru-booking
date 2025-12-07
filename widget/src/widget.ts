@@ -10,12 +10,17 @@ export interface BookingWidgetConfig {
   stepInterval?: number;
   accentColor?: string;
   notifyEmail?: string;
+  displayMode?: 'inline' | 'modal'; // inline = siempre visible, modal = con trigger button
+  triggerText?: string;
+  triggerPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmation';
 
 export class BookingWidget {
   private widgetContainer: HTMLDivElement | null = null;
+  private modalOverlay: HTMLDivElement | null = null;
+  private triggerButton: HTMLButtonElement | null = null;
   private currentStep: Step = 'service';
   private services: Service[] = [];
   private selectedService: Service | null = null;
@@ -23,6 +28,7 @@ export class BookingWidget {
   private selectedTime: string = '';
   private bookingResult: BookingResponse | null = null;
   private config: BookingWidgetConfig | null = null;
+  private isOpen: boolean = false;
 
   // Componentes
   private serviceSelector: ServiceSelector | null = null;
@@ -77,9 +83,12 @@ export class BookingWidget {
       this.log('🚀 Development mode detected: Bypassing Koru SDK auth');
 
       const mockConfig: BookingWidgetConfig = {
-        accentColor: '#00C896',
+        accentColor: '#0d9488',
         layout: 'list',
         stepInterval: 30,
+        displayMode: 'modal', // Cambiar a 'inline' para modo embebido
+        triggerText: 'Reservar cita',
+        triggerPosition: 'bottom-right',
       };
 
       try {
@@ -119,33 +128,119 @@ export class BookingWidget {
   async onRender(config: BookingWidgetConfig): Promise<void> {
     console.log('🎨 onRender called');
     const typedConfig = config as BookingWidgetConfig;
+    this.config = typedConfig;
 
-    // Crear contenedor principal
-    console.log('Creating widget container...');
+    const displayMode = typedConfig.displayMode || 'inline';
+
+    if (displayMode === 'modal') {
+      this.renderModalMode(typedConfig);
+    } else {
+      this.renderInlineMode(typedConfig);
+    }
+  }
+
+  private renderInlineMode(config: BookingWidgetConfig): void {
+    console.log('Rendering inline mode...');
+
     this.widgetContainer = this.createElement('div', {
       className: 'koru-booking-widget',
-      style: {
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-        maxWidth: '800px',
-        margin: '0 auto',
-        padding: '20px',
-        backgroundColor: '#fff',
-        borderRadius: '12px',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-      } as any,
     });
-    console.log('Widget container created:', this.widgetContainer);
 
-    // Buscar el contenedor #widget-root o usar body
     const targetElement = document.getElementById('widget-root') || document.body;
-    console.log('Target element:', targetElement);
     targetElement.appendChild(this.widgetContainer);
-    console.log('Widget container appended to target');
 
-    // Renderizar paso inicial
-    console.log('Calling renderStep...');
-    await this.renderStep(typedConfig);
-    console.log('renderStep completed');
+    this.renderStep(config);
+  }
+
+  private renderModalMode(config: BookingWidgetConfig): void {
+    console.log('Rendering modal mode...');
+
+    // Crear botón trigger
+    this.triggerButton = this.createElement('button', {
+      className: 'kb-trigger-button',
+    });
+
+    const triggerText = config.triggerText || '📅 Reservar ahora';
+    this.triggerButton.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="4" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+        <path d="M3 8H17" stroke="currentColor" stroke-width="2"/>
+        <path d="M7 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M13 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>${triggerText}</span>
+    `;
+
+    const position = config.triggerPosition || 'bottom-right';
+    this.triggerButton.classList.add(`kb-trigger-${position}`);
+
+    this.triggerButton.onclick = () => this.openModal(config);
+    document.body.appendChild(this.triggerButton);
+
+    // Crear modal overlay (oculto inicialmente)
+    this.modalOverlay = this.createElement('div', {
+      className: 'kb-modal-overlay',
+    });
+    this.modalOverlay.style.display = 'none';
+
+    // Click en overlay cierra el modal
+    this.modalOverlay.onclick = (e) => {
+      if (e.target === this.modalOverlay) {
+        this.closeModal();
+      }
+    };
+
+    // Crear contenedor del widget dentro del modal
+    this.widgetContainer = this.createElement('div', {
+      className: 'koru-booking-widget kb-modal-content',
+    });
+
+    // Botón cerrar
+    const closeButton = this.createElement('button', {
+      className: 'kb-modal-close',
+    });
+    closeButton.innerHTML = '×';
+    closeButton.onclick = () => this.closeModal();
+
+    this.widgetContainer.appendChild(closeButton);
+    this.modalOverlay.appendChild(this.widgetContainer);
+    document.body.appendChild(this.modalOverlay);
+  }
+
+  private openModal(config: BookingWidgetConfig): void {
+    if (!this.modalOverlay || !this.widgetContainer) return;
+
+    this.isOpen = true;
+    this.modalOverlay.style.display = 'flex';
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+      this.modalOverlay!.classList.add('kb-modal-open');
+    });
+
+    // Renderizar contenido si es la primera vez
+    if (!this.widgetContainer.querySelector('.kb-step-container')) {
+      this.renderStep(config);
+    }
+
+    // Prevenir scroll del body
+    document.body.style.overflow = 'hidden';
+  }
+
+  private closeModal(): void {
+    if (!this.modalOverlay) return;
+
+    this.isOpen = false;
+    this.modalOverlay.classList.remove('kb-modal-open');
+
+    setTimeout(() => {
+      if (this.modalOverlay) {
+        this.modalOverlay.style.display = 'none';
+      }
+    }, 300);
+
+    // Restaurar scroll del body
+    document.body.style.overflow = '';
   }
 
   private async renderStep(config: BookingWidgetConfig): Promise<void> {

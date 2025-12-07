@@ -1,5 +1,6 @@
 import { validateEmail, validateName, validatePhone, ValidationMessages } from '../utils/validation';
 import { Service } from '../api/client';
+import { getIcon } from './icons';
 
 export interface CustomerData {
   name: string;
@@ -20,6 +21,7 @@ export interface CustomerFormOptions {
 export class CustomerForm {
   private container: HTMLElement | null = null;
   private options: CustomerFormOptions;
+  private submitButton: HTMLButtonElement | null = null;
   private formData: CustomerData = {
     name: '',
     email: '',
@@ -41,32 +43,47 @@ export class CustomerForm {
 
     const backBtn = document.createElement('button');
     backBtn.className = 'kb-back-button';
-    backBtn.textContent = '← Volver';
+    backBtn.innerHTML = `${getIcon('arrowLeft')} Volver`;
     backBtn.onclick = () => this.options.onBack();
     header.appendChild(backBtn);
+
+    this.container.appendChild(header);
+
+    // Title and subtitle
+    const titleContainer = document.createElement('div');
+    titleContainer.className = 'kb-form-header';
 
     const title = document.createElement('h2');
     title.className = 'kb-step-title';
     title.textContent = 'Completa tus datos';
-    header.appendChild(title);
+    titleContainer.appendChild(title);
 
-    this.container.appendChild(header);
+    const subtitle = document.createElement('p');
+    subtitle.className = 'kb-step-subtitle';
+    subtitle.textContent = 'Necesitamos algunos datos para confirmar tu reserva';
+    titleContainer.appendChild(subtitle);
+
+    this.container.appendChild(titleContainer);
 
     // Resumen de la reserva
     const summary = document.createElement('div');
     summary.className = 'kb-booking-summary';
     summary.innerHTML = `
       <div class="kb-summary-item">
-        <strong>Servicio:</strong> ${this.options.service.name}
+        <strong>Servicio</strong>
+        <span>${this.options.service.name}</span>
       </div>
       <div class="kb-summary-item">
-        <strong>Fecha:</strong> ${this.formatDisplayDate(this.options.date)}
+        <strong>Fecha</strong>
+        <span>${this.formatDisplayDate(this.options.date)}</span>
       </div>
       <div class="kb-summary-item">
-        <strong>Hora:</strong> ${this.options.time}
+        <strong>Hora</strong>
+        <span>${this.options.time}</span>
       </div>
       <div class="kb-summary-item">
-        <strong>Duración:</strong> ${this.options.service.duration} min
+        <strong>Duración</strong>
+        <span>${this.options.service.duration} min</span>
       </div>
     `;
     this.container.appendChild(summary);
@@ -80,27 +97,27 @@ export class CustomerForm {
     };
 
     // Campo: Nombre
-    form.appendChild(this.createField('name', 'Nombre completo', 'text', true));
+    form.appendChild(this.createField('name', 'Nombre completo', 'text', true, 'user', 'Juan Pérez'));
 
     // Campo: Email
-    form.appendChild(this.createField('email', 'Email', 'email', true));
+    form.appendChild(this.createField('email', 'Correo electrónico', 'email', true, 'mail', 'tu@email.com'));
 
     // Campo: Teléfono
-    form.appendChild(this.createField('phone', 'Teléfono (opcional)', 'tel', false));
+    form.appendChild(this.createField('phone', 'Teléfono', 'tel', false, 'phone', '+54 11 1234-5678'));
 
     // Campo: Notas
     const notesGroup = document.createElement('div');
     notesGroup.className = 'kb-form-group';
 
     const notesLabel = document.createElement('label');
-    notesLabel.textContent = 'Notas adicionales (opcional)';
     notesLabel.className = 'kb-form-label';
+    notesLabel.innerHTML = `${getIcon('note')} <span>Notas adicionales <span class="kb-optional">(opcional)</span></span>`;
     notesGroup.appendChild(notesLabel);
 
     const notesTextarea = document.createElement('textarea');
     notesTextarea.className = 'kb-form-textarea';
-    notesTextarea.rows = 3;
-    notesTextarea.placeholder = 'Información adicional que quieras compartir...';
+    notesTextarea.rows = 4;
+    notesTextarea.placeholder = 'Agrega cualquier información adicional que consideres relevante...';
     notesTextarea.oninput = (e) => {
       this.formData.notes = (e.target as HTMLTextAreaElement).value;
     };
@@ -109,12 +126,17 @@ export class CustomerForm {
     form.appendChild(notesGroup);
 
     // Botón de envío
-    const submitBtn = document.createElement('button');
-    submitBtn.type = 'submit';
-    submitBtn.className = 'kb-submit-button';
-    submitBtn.textContent = 'Confirmar Reserva';
-    submitBtn.style.backgroundColor = this.options.accentColor;
-    form.appendChild(submitBtn);
+    this.submitButton = document.createElement('button');
+    this.submitButton.type = 'submit';
+    this.submitButton.className = 'kb-submit-button';
+    this.submitButton.innerHTML = `
+      <div class="kb-button-content">
+        ${getIcon('checkCircle')}
+        <span>Confirmar Reserva</span>
+      </div>
+      <div class="kb-spinner"></div>
+    `;
+    form.appendChild(this.submitButton);
 
     this.container.appendChild(form);
     parent.appendChild(this.container);
@@ -124,20 +146,24 @@ export class CustomerForm {
     name: keyof CustomerData,
     label: string,
     type: string,
-    required: boolean
+    required: boolean,
+    icon: string,
+    placeholder: string
   ): HTMLElement {
     const group = document.createElement('div');
     group.className = 'kb-form-group';
 
     const labelEl = document.createElement('label');
-    labelEl.textContent = label + (required ? ' *' : '');
     labelEl.className = 'kb-form-label';
+    const requiredMark = required ? '<span class="kb-required">*</span>' : '<span class="kb-optional">(opcional)</span>';
+    labelEl.innerHTML = `${getIcon(icon as any)} <span>${label} ${requiredMark}</span>`;
     group.appendChild(labelEl);
 
     const input = document.createElement('input');
     input.type = type;
     input.className = 'kb-form-input';
     input.required = required;
+    input.placeholder = placeholder;
     input.oninput = (e) => {
       this.formData[name] = (e.target as HTMLInputElement).value as any;
       this.clearError(group);
@@ -176,7 +202,18 @@ export class CustomerForm {
     }
 
     if (isValid) {
+      this.setLoading(true);
       this.options.onSubmit(this.formData);
+    }
+  }
+
+  private setLoading(loading: boolean): void {
+    if (!this.submitButton) return;
+
+    if (loading) {
+      this.submitButton.classList.add('kb-loading');
+    } else {
+      this.submitButton.classList.remove('kb-loading');
     }
   }
 

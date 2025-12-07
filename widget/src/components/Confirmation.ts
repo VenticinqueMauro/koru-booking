@@ -1,4 +1,5 @@
 import { BookingResponse } from '../api/client';
+import { getIcon } from './icons';
 
 export interface ConfirmationOptions {
   booking: BookingResponse;
@@ -21,7 +22,7 @@ export class Confirmation {
     // Success Icon
     const icon = document.createElement('div');
     icon.className = 'kb-success-icon';
-    icon.innerHTML = '✓';
+    icon.innerHTML = getIcon('checkCircle');
     this.container.appendChild(icon);
 
     // Title
@@ -33,24 +34,24 @@ export class Confirmation {
     // Message
     const message = document.createElement('p');
     message.className = 'kb-confirmation-message';
-    message.innerHTML = `Hemos enviado los detalles a <strong>${this.options.booking.customerEmail}</strong>`;
+    message.innerHTML = `Hemos enviado la confirmación a<br><strong>${this.options.booking.customerEmail}</strong>`;
     this.container.appendChild(message);
 
     // Details Box
     const details = document.createElement('div');
-    details.className = 'kb-booking-summary';
+    details.className = 'kb-booking-summary kb-confirmation-details';
     details.innerHTML = `
       <div class="kb-summary-item">
         <strong>Servicio</strong>
-        ${this.options.booking.serviceName}
+        <span>${this.options.booking.serviceName}</span>
       </div>
       <div class="kb-summary-item">
         <strong>Fecha</strong>
-        ${this.formatDisplayDate(this.options.booking.date)}
+        <span>${this.formatDisplayDate(this.options.booking.date)}</span>
       </div>
       <div class="kb-summary-item">
         <strong>Hora</strong>
-        ${this.options.booking.time}
+        <span>${this.options.booking.time}</span>
       </div>
     `;
     this.container.appendChild(details);
@@ -59,20 +60,35 @@ export class Confirmation {
     const actions = document.createElement('div');
     actions.className = 'kb-confirmation-actions';
 
+    // Primary: Nueva reserva (mismo icono que botón flotante)
+    const newBookingBtn = document.createElement('button');
+    newBookingBtn.className = 'kb-submit-button';
+    newBookingBtn.innerHTML = `
+      <div class="kb-button-content">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="4" width="14" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+          <path d="M3 8H17" stroke="currentColor" stroke-width="2"/>
+          <path d="M7 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M13 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>Nueva Reserva</span>
+      </div>
+    `;
+    newBookingBtn.onclick = () => this.options.onClose();
+    newBookingBtn.style.marginTop = '0';
+    actions.appendChild(newBookingBtn);
+
+    // Secondary: Agregar a calendario
     const calendarBtn = document.createElement('a');
-    calendarBtn.className = 'kb-button-outline';
-    calendarBtn.textContent = '📅 Agregar a Calendario';
+    calendarBtn.className = 'kb-button-secondary';
+    calendarBtn.innerHTML = `
+      ${getIcon('calendar')}
+      <span>Agregar a Calendario</span>
+    `;
     calendarBtn.href = this.generateCalendarLink();
     calendarBtn.target = '_blank';
+    calendarBtn.rel = 'noopener noreferrer';
     actions.appendChild(calendarBtn);
-
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'kb-submit-button';
-    closeBtn.textContent = 'Nueva Reserva';
-    closeBtn.onclick = () => this.options.onClose();
-    closeBtn.style.marginTop = '0'; // Override default margin
-    closeBtn.style.backgroundColor = this.options.accentColor;
-    actions.appendChild(closeBtn);
 
     this.container.appendChild(actions);
     parent.appendChild(this.container);

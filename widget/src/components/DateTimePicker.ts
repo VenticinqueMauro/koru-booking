@@ -165,17 +165,15 @@ export class DateTimePicker {
       validSlots.forEach((time) => {
         const slotBtn = document.createElement('button');
         slotBtn.className = 'kb-slot-button';
-        slotBtn.textContent = time;
+
+        // Create span for text to appear above gradient
+        const timeText = document.createElement('span');
+        timeText.textContent = time;
+        timeText.style.position = 'relative';
+        timeText.style.zIndex = '1';
+        slotBtn.appendChild(timeText);
+
         slotBtn.onclick = () => this.options.onSelect(formatDate(this.selectedDate), time);
-        
-        slotBtn.addEventListener('mouseenter', () => {
-          slotBtn.style.backgroundColor = this.options.accentColor;
-          slotBtn.style.color = '#fff';
-        });
-        slotBtn.addEventListener('mouseleave', () => {
-          slotBtn.style.backgroundColor = '';
-          slotBtn.style.color = '';
-        });
 
         slotsGrid.appendChild(slotBtn);
       });

@@ -1,4 +1,5 @@
 import { Service } from '../api/client';
+import { getIcon } from './icons';
 
 export interface ServiceSelectorOptions {
   services: Service[];
@@ -19,11 +20,21 @@ export class ServiceSelector {
     this.container = document.createElement('div');
     this.container.className = 'kb-service-selector';
 
-    // Título
+    // Header con título y subtítulo
+    const header = document.createElement('div');
+    header.className = 'kb-services-header';
+
     const title = document.createElement('h2');
     title.className = 'kb-step-title';
-    title.textContent = '¿Qué servicio necesitas?';
-    this.container.appendChild(title);
+    title.textContent = 'Selecciona tu servicio';
+    header.appendChild(title);
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'kb-step-subtitle';
+    subtitle.textContent = 'Elige el servicio que mejor se adapte a tus necesidades';
+    header.appendChild(subtitle);
+
+    this.container.appendChild(header);
 
     // Lista de servicios
     const servicesContainer = document.createElement('div');
@@ -66,13 +77,13 @@ export class ServiceSelector {
 
     const duration = document.createElement('span');
     duration.className = 'kb-service-duration';
-    duration.textContent = `⏱ ${service.duration} min`;
+    duration.innerHTML = `${getIcon('clock')} <span>${service.duration} min</span>`;
     details.appendChild(duration);
 
     if (service.price) {
       const price = document.createElement('span');
       price.className = 'kb-service-price';
-      price.textContent = `💰 $${service.price}`;
+      price.innerHTML = `${getIcon('dollar')} $${service.price}`;
       details.appendChild(price);
     }
 
