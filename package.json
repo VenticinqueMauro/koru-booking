@@ -1,0 +1,15 @@
+{
+    "name": "koru-booking-root",
+    "private": true,
+    "scripts": {
+        "deploy": "npm run build:all && npx gh-pages -d dist -r https://github.com/VenticinqueMauro/koru-booking.git",
+        "build:all": "npm run build:backoffice && npm run build:widget && npm run copy:dist",
+        "build:backoffice": "cd backoffice && npm install && npm run build",
+        "build:widget": "cd widget && npm install && npm run build",
+        "copy:dist": "rimraf dist && mkdir dist && mkdir dist\\widget && xcopy backoffice\\dist dist /E /I /Y && xcopy widget\\dist dist\\widget /E /I /Y && copy widget\\demo.html dist\\widget\\index.html"
+    },
+    "devDependencies": {
+        "gh-pages": "^6.1.0",
+        "rimraf": "^5.0.5"
+    }
+}

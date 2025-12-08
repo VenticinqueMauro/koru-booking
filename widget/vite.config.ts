@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 
 export default defineConfig({
+  base: '/koru-booking/widget/',
   build: {
     lib: {
       entry: path.resolve(__dirname, 'src/index.ts'),
@@ -16,12 +17,6 @@ export default defineConfig({
       },
     },
     sourcemap: true,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-      },
-    },
   },
   resolve: {
     alias: {
