@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import { env } from './config/env.js';
 import { corsMiddleware } from './middleware/cors.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
@@ -11,7 +12,7 @@ import schedulesRoutes from './routes/schedules.js';
 import settingsRoutes from './routes/settings.js';
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = env.PORT;
 
 // Middleware
 app.use(corsMiddleware);
@@ -39,7 +40,7 @@ app.listen(PORT, () => {
 ╔═══════════════════════════════════════╗
 ║   🚀 Koru Booking API Server         ║
 ║   📡 Running on port ${PORT}            ║
-║   🌍 Environment: ${process.env.NODE_ENV || 'development'}       ║
+║   🌍 Environment: ${env.NODE_ENV}       ║
 ╚═══════════════════════════════════════╝
   `);
 });

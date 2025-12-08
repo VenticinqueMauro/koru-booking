@@ -10,23 +10,46 @@ API REST para el sistema de gestión de reservas Koru Booking.
 npm install
 ```
 
-### 2. Configurar base de datos
+### 2. Configurar Supabase y Base de Datos
 
-Crea un archivo `.env` basado en `.env.example` y configura tu DATABASE_URL de Supabase.
+**⚠️ IMPORTANTE**: Este proyecto usa **PostgreSQL (Supabase)** en producción.
 
-```bash
-cp .env.example .env
-```
+**Opción A: Setup Automático (Recomendado)**
 
-### 3. Ejecutar migraciones
+Sigue la guía completa en [SETUP_SUPABASE.md](./SETUP_SUPABASE.md) y usa el script:
 
 ```bash
-npm run prisma:push
-# o
-npm run prisma:migrate
+# Windows PowerShell
+.\scripts\setup-database.ps1
+
+# Linux/Mac
+chmod +x scripts/setup-database.sh
+./scripts/setup-database.sh
 ```
 
-### 4. Iniciar servidor
+**Opción B: Setup Manual**
+
+1. Crea un archivo `.env` basado en `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Configura tus credenciales de Supabase en `.env`:
+   - DATABASE_URL (Connection String)
+   - SUPABASE_URL
+   - SUPABASE_ANON_KEY
+   - ADMIN_EMAIL
+
+3. Ejecuta las migraciones:
+   ```bash
+   npm run prisma:generate
+   npm run prisma:migrate:deploy
+   npm run prisma:seed  # Opcional: datos de prueba
+   ```
+
+**Checklist completo**: Ver [MIGRATION_CHECKLIST.md](./MIGRATION_CHECKLIST.md)
+
+### 3. Iniciar servidor
 
 ```bash
 # Desarrollo (con hot reload)
@@ -38,6 +61,8 @@ npm start
 ```
 
 El servidor estará disponible en http://localhost:4000
+
+**Health Check**: http://localhost:4000/health
 
 ## 📡 Endpoints
 
@@ -67,29 +92,48 @@ El servidor estará disponible en http://localhost:4000
 ## 🛠️ Scripts
 
 ```bash
-npm run dev              # Desarrollo con watch mode
-npm run build            # Compilar TypeScript
-npm start                # Iniciar en producción
-npm run prisma:generate  # Generar Prisma Client
-npm run prisma:migrate   # Crear y aplicar migraciones
-npm run prisma:studio    # Abrir Prisma Studio (GUI)
-npm run prisma:push      # Sincronizar schema (desarrollo)
+# Desarrollo
+npm run dev                    # Desarrollo con watch mode
+npm run type-check             # Verificar tipos sin compilar
+
+# Build & Deploy
+npm run build                  # Compilar TypeScript
+npm start                      # Iniciar en producción
+
+# Database
+npm run prisma:generate        # Generar Prisma Client
+npm run prisma:migrate         # Crear y aplicar migración (dev)
+npm run prisma:migrate:deploy  # Aplicar migraciones (producción)
+npm run prisma:seed            # Poblar base de datos
+npm run prisma:studio          # Abrir Prisma Studio (GUI)
+npm run db:setup               # Setup completo: generate + migrate + seed
 ```
 
 ## 🗄️ Base de Datos
 
-Tablas principales:
+**Motor**: PostgreSQL (Supabase)
+
+**Tablas principales**:
 - **Service**: Servicios ofrecidos
 - **Schedule**: Horarios semanales (7 registros, uno por día)
 - **Booking**: Reservas de clientes
 - **WidgetSettings**: Configuración del widget
 
+**Características**:
+- UUIDs como IDs
+- Transacciones ACID completas
+- Índices optimizados para queries frecuentes
+- Unique constraints para prevenir duplicados
+- Timestamps automáticos (createdAt, updatedAt)
+
 ## 🔐 Seguridad
 
-- Validación de datos con Zod
-- Validación atómica de conflictos (transacciones)
-- Unique constraints en base de datos
-- CORS configurado
+- **Validación de variables de entorno**: Sistema de validación con Zod (failfast)
+- **Validación de datos**: Todos los inputs validados con Zod schemas
+- **Transacciones atómicas**: Prevención de race conditions en reservas
+- **Unique constraints**: Base de datos previene duplicados
+- **CORS configurado**: Solo orígenes permitidos
+- **No credenciales en repo**: `.env.example` solo tiene placeholders
 
 ## 📧 Notificaciones
 
