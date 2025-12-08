@@ -6,7 +6,7 @@
         "build:all": "npm run build:backoffice && npm run build:widget && npm run copy:dist",
         "build:backoffice": "cd backoffice && npm install && npm run build",
         "build:widget": "cd widget && npm install && npm run build",
-        "copy:dist": "rimraf dist && mkdir dist && mkdir dist\\widget && xcopy backoffice\\dist dist /E /I /Y && xcopy widget\\dist dist\\widget /E /I /Y && copy widget\\demo.html dist\\widget\\index.html"
+        "copy:dist": "rimraf dist && mkdir dist && type nul > dist\\.nojekyll && mkdir dist\\widget && xcopy backoffice\\dist dist /E /I /Y && xcopy widget\\dist dist\\widget /E /I /Y && copy widget\\demo.html dist\\widget\\index.html"
     },
     "devDependencies": {
         "gh-pages": "^6.1.0",
