@@ -6,18 +6,13 @@ import { CustomerForm, CustomerData } from './components/CustomerForm';
 import { Confirmation } from './components/Confirmation';
 import './styles/widget.css';
 
-export interface WidgetPosition {
-  bottom?: number;
-  top?: number;
-  left?: number;
-  right?: number;
-}
-
 export interface BookingWidgetConfig extends WidgetConfig {
   accentColor?: string;
   displayMode?: 'inline' | 'modal';
   triggerText?: string;
-  position?: WidgetPosition;
+  triggerPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  offsetX?: number;
+  offsetY?: number;
 }
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmation';
@@ -68,10 +63,9 @@ export class BookingWidget extends KoruWidget {
         accentColor: '#0d9488',
         displayMode: 'modal', // Cambiar a 'inline' para modo embebido
         triggerText: 'Reservar cita',
-        position: {
-          bottom: 24,
-          right: 24,
-        },
+        triggerPosition: 'bottom-right',
+        offsetX: 24,
+        offsetY: 24,
       };
 
       try {
@@ -160,19 +154,28 @@ export class BookingWidget extends KoruWidget {
       <span>${triggerText}</span>
     `;
 
-    // Apply custom position using inline styles
-    const position = config.position || { bottom: 24, right: 24 };
-    if (position.bottom !== undefined) {
-      this.triggerButton.style.bottom = `${position.bottom}px`;
-    }
-    if (position.top !== undefined) {
-      this.triggerButton.style.top = `${position.top}px`;
-    }
-    if (position.left !== undefined) {
-      this.triggerButton.style.left = `${position.left}px`;
-    }
-    if (position.right !== undefined) {
-      this.triggerButton.style.right = `${position.right}px`;
+    // Apply position based on triggerPosition and offsets
+    const position = config.triggerPosition || 'bottom-right';
+    const offsetX = config.offsetX ?? 24; // Horizontal offset (from left or right)
+    const offsetY = config.offsetY ?? 24; // Vertical offset (from top or bottom)
+
+    switch (position) {
+      case 'bottom-right':
+        this.triggerButton.style.bottom = `${offsetY}px`;
+        this.triggerButton.style.right = `${offsetX}px`;
+        break;
+      case 'bottom-left':
+        this.triggerButton.style.bottom = `${offsetY}px`;
+        this.triggerButton.style.left = `${offsetX}px`;
+        break;
+      case 'top-right':
+        this.triggerButton.style.top = `${offsetY}px`;
+        this.triggerButton.style.right = `${offsetX}px`;
+        break;
+      case 'top-left':
+        this.triggerButton.style.top = `${offsetY}px`;
+        this.triggerButton.style.left = `${offsetX}px`;
+        break;
     }
 
     this.triggerButton.onclick = () => this.openModal(config);

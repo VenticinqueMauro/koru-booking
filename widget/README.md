@@ -49,27 +49,51 @@ La configuración del widget se gestiona desde [Koru Platform](https://app-manag
 | `accentColor` | string | Color principal del widget (formato Hex) | `#00C896` |
 | `displayMode` | `inline` \| `modal` | Modo de visualización | `modal` |
 | `triggerText` | string | Texto del botón disparador (solo modo modal) | `Reservar ahora` |
-| `position` | object | Posición del botón flotante en píxeles | `{ bottom: 24, right: 24 }` |
+| `triggerPosition` | enum | Esquina del botón flotante | `bottom-right` |
+| `offsetX` | number | Distancia horizontal desde el borde (px) | `24` |
+| `offsetY` | number | Distancia vertical desde el borde (px) | `24` |
 
 ### Configuración de Posición
 
-El objeto `position` permite ajustar la ubicación exacta del botón flotante (solo en modo `modal`):
+La posición del botón flotante (solo en modo `modal`) se controla con tres propiedades:
 
+1. **`triggerPosition`**: Define la esquina base
+   - `bottom-right` (por defecto)
+   - `bottom-left`
+   - `top-right`
+   - `top-left`
+
+2. **`offsetX`**: Distancia horizontal desde el borde (0-200 píxeles)
+3. **`offsetY`**: Distancia vertical desde el borde (0-200 píxeles)
+
+#### Ejemplos de Configuración:
+
+**Esquina inferior derecha (por defecto):**
 ```json
 {
-  "position": {
-    "bottom": 24,    // Distancia desde abajo en píxeles
-    "right": 24      // Distancia desde la derecha en píxeles
-  }
+  "triggerPosition": "bottom-right",
+  "offsetX": 24,
+  "offsetY": 24
 }
 ```
 
-Puedes usar cualquier combinación de `bottom`/`top` y `left`/`right`:
-- **Esquina inferior derecha:** `{ bottom: 24, right: 24 }` (por defecto)
-- **Esquina inferior izquierda:** `{ bottom: 24, left: 24 }`
-- **Esquina superior derecha:** `{ top: 24, right: 24 }`
-- **Esquina superior izquierda:** `{ top: 24, left: 24 }`
-- **Posición personalizada:** `{ bottom: 100, right: 50 }` (útil si tienes un botón de WhatsApp u otros elementos)
+**Esquina inferior izquierda:**
+```json
+{
+  "triggerPosition": "bottom-left",
+  "offsetX": 24,
+  "offsetY": 24
+}
+```
+
+**Botón más arriba para evitar conflicto con WhatsApp:**
+```json
+{
+  "triggerPosition": "bottom-right",
+  "offsetX": 24,
+  "offsetY": 100
+}
+```
 
 **Nota:** Las configuraciones de `apiUrl`, `layout` y `stepInterval` se manejan desde el backoffice y no son configurables desde el widget.
 
