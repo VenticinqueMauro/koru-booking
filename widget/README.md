@@ -1,103 +1,123 @@
 # Koru Booking Widget
 
-Widget embebible ultra-ligero para sistema de reservas Koru Booking.
+Widget embebible para sistema de reservas Koru Booking, integrado con [Koru Platform](https://app-manager.vercel.app).
 
-## 🚀 Inicio Rápido
+## 🚀 Instalación en tu Sitio Web
 
-### Desarrollo
+### Opción 1: Script Tag (Recomendado)
+
+Copia y pega este código en tu sitio web, justo antes del cierre de `</body>`:
+
+```html
+<script
+  src="https://venticinquemauro.github.io/koru-booking/widget/koru-booking-widget.umd.js"
+  data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783"
+  data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
+  data-app-manager-url="https://app-manager.vercel.app"
+  async
+></script>
+```
+
+### Opción 2: Contenedor Específico (Modo Inline)
+
+Si quieres que el widget aparezca en un lugar específico, agrega un contenedor:
+
+```html
+<!-- Donde quieres que aparezca el widget -->
+<div id="widget-root"></div>
+
+<!-- Script al final del body -->
+<script
+  src="https://venticinquemauro.github.io/koru-booking/widget/koru-booking-widget.umd.js"
+  data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783"
+  data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
+  data-app-manager-url="https://app-manager.vercel.app"
+  async
+></script>
+```
+
+**Nota:** Configura el `displayMode` en Koru Platform:
+- `inline`: El widget se renderiza en `#widget-root` o al final del body
+- `modal`: Aparece un botón flotante que abre el widget en modal
+
+## ⚙️ Configuración
+
+La configuración del widget se gestiona desde [Koru Platform](https://app-manager.vercel.app). Puedes personalizar:
+
+| Opción | Tipo | Descripción | Por Defecto |
+|--------|------|-------------|-------------|
+| `apiUrl` | string | URL del backend API | - |
+| `layout` | `list` \| `grid` \| `button` | Diseño de servicios | `list` |
+| `accentColor` | string | Color principal (Hex) | `#00C896` |
+| `stepInterval` | number | Intervalo de slots (minutos) | `30` |
+| `displayMode` | `inline` \| `modal` | Modo de visualización | `inline` |
+| `triggerText` | string | Texto del botón (modo modal) | `Reservar ahora` |
+| `triggerPosition` | string | Posición del botón modal | `bottom-right` |
+
+## 🎨 Características
+
+- ✅ Wizard de 4 pasos intuitivo (Servicio → Fecha/Hora → Datos → Confirmación)
+- ✅ Calendario visual con disponibilidad en tiempo real
+- ✅ Validación de formularios
+- ✅ Responsive (móvil y desktop)
+- ✅ Bundle ultra-ligero (~19KB gzip)
+- ✅ Prevención de conflictos (validación atómica)
+- ✅ Export a Google Calendar
+- ✅ Integración completa con Koru Platform
+
+## 🧪 Testing
+
+### Modo Desarrollo (Local)
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abre http://localhost:3001 para ver el demo.
+Abre http://localhost:3001 - El widget funcionará con configuración mock sin necesidad de Koru Platform.
 
-### Build para Producción
+### Modo Producción (Test)
+
+Abre `test-production.html` en tu navegador para probar la integración completa con Koru Platform.
+
+## 🏗️ Build para Producción
 
 ```bash
 npm run build
 ```
 
-Los archivos compilados estarán en `dist/`.
+Los archivos compilados estarán en `dist/`:
+- `koru-booking-widget.umd.js` - Bundle UMD (68KB, 19KB gzipped)
+- `koru-booking-widget.es.js` - Bundle ESM
+- `style.css` - Estilos del widget
 
-## 📦 Instalación
-
-### Como Script (Recomendado)
-
-```html
-<script
-  src="https://cdn.tu-dominio.com/koru-booking-widget.umd.js"
-  data-website-id="ws_xxx"
-  data-app-id="app_xxx"
-  data-app-manager-url="https://www.korusuite.com"
-></script>
-```
-
-### Como Módulo ES
-
-```javascript
-import { BookingWidget } from '@koru-booking/widget';
-
-const widget = new BookingWidget();
-widget.start();
-```
-
-## ⚙️ Configuración
-
-### Variables de Entorno
-
-Crea un archivo `.env` basado en `.env.example`:
-
-```env
-VITE_KORU_WEBSITE_ID=ws_xxx
-VITE_KORU_APP_ID=app_xxx
-VITE_KORU_URL=https://www.korusuite.com
-VITE_BACKEND_API_URL=http://localhost:4000
-```
-
-### Configuración del Widget
-
-El widget se configura automáticamente desde Koru Platform con estos campos:
-
-- **layout**: `list` | `grid` | `button` (Diseño de servicios)
-- **stepInterval**: Intervalo visual de slots (minutos)
-- **accentColor**: Color principal del widget
-- **notifyEmail**: Email para notificaciones
-
-## 🎨 Características
-
-- ✅ Wizard de 4 pasos intuitivo
-- ✅ Calendario visual con disponibilidad en tiempo real
-- ✅ Validación de formularios
-- ✅ Responsive (móvil y desktop)
-- ✅ Bundle ultra-ligero (~2KB gzip)
-- ✅ Prevención de conflictos (validación atómica)
-- ✅ Export a Google Calendar
-
-## 📁 Estructura
+## 📁 Estructura del Proyecto
 
 ```
-src/
-├── widget.ts              # Clase principal
-├── components/
-│   ├── ServiceSelector.ts # Paso 1: Servicios
-│   ├── DateTimePicker.ts  # Paso 2: Fecha/Hora
-│   ├── CustomerForm.ts    # Paso 3: Datos
-│   └── Confirmation.ts    # Paso 4: Éxito
-├── api/
-│   └── client.ts          # Cliente HTTP
-├── utils/
-│   ├── date.ts            # Helpers de fechas
-│   └── validation.ts      # Validaciones
-├── styles/
-│   └── widget.css         # Estilos
-└── index.ts               # Entry point
+widget/
+├── src/
+│   ├── widget.ts              # Clase principal (extiende KoruWidget)
+│   ├── index.ts               # Entry point
+│   ├── components/
+│   │   ├── ServiceSelector.ts # Paso 1: Selección de servicio
+│   │   ├── DateTimePicker.ts  # Paso 2: Fecha y hora
+│   │   ├── CustomerForm.ts    # Paso 3: Datos del cliente
+│   │   └── Confirmation.ts    # Paso 4: Confirmación
+│   ├── api/
+│   │   └── client.ts          # Cliente HTTP para backend
+│   ├── utils/
+│   │   ├── date.ts            # Helpers de fechas
+│   │   └── validation.ts      # Validaciones
+│   └── styles/
+│       └── widget.css         # Estilos
+├── demo.html                  # Demo local
+├── test-production.html       # Test de producción
+└── package.json
 ```
 
 ## 🔌 API Backend Requerida
 
-El widget consume estos endpoints:
+El widget consume estos endpoints del backend:
 
 ### `GET /api/services`
 Retorna lista de servicios activos.
@@ -157,14 +177,53 @@ Crea una nueva reserva.
 }
 ```
 
-## 🐛 Debugging
+## 🔧 Arquitectura Técnica
 
-Activa el modo debug en `widget.ts`:
+### Integración con Koru SDK
 
-```typescript
-options: {
-  debug: true, // Logs en consola
-}
+El widget extiende la clase `KoruWidget` del SDK oficial (`@redclover/koru-sdk`), implementando:
+
+- **`onInit(config)`**: Inicializa el widget y carga servicios del backend
+- **`onRender(config)`**: Renderiza la UI según la configuración
+- **`onDestroy()`**: Limpia recursos cuando el widget se detiene
+- **`onConfigUpdate(config)`**: Actualiza configuración sin re-render completo
+
+### Modo Desarrollo vs Producción
+
+El widget detecta automáticamente el entorno:
+
+**Localhost (Desarrollo):**
+- Usa configuración mock
+- No requiere autenticación con Koru
+- Backend URL desde `.env` o `http://localhost:4000`
+
+**Producción:**
+- Autenticación automática con Koru App Manager
+- Configuración dinámica desde Koru Platform
+- Backend URL configurable desde la plataforma
+
+## 🐛 Troubleshooting
+
+### El widget no se carga
+1. Verifica que la URL del script sea accesible
+2. Revisa la consola del navegador para errores
+3. Asegúrate de que los `data-attributes` sean correctos
+
+### Error de CORS
+El backend debe permitir requests desde el dominio donde está instalado el widget.
+
+### El widget no muestra servicios
+1. Verifica que el `apiUrl` esté configurado correctamente en Koru Platform
+2. Asegúrate de que el backend esté accesible y retorne datos válidos
+3. Revisa los logs en la consola del navegador
+
+### Debug Mode
+El widget tiene logging activado. Abre la consola del navegador para ver:
+```
+[koru-booking] 🚀 Production mode: Using Koru SDK authentication
+[koru-booking] onInit called with config: {...}
+[koru-booking] API Client configured with URL: https://...
+[koru-booking] Services loaded: [...]
 ```
 
 ## 📄 Licencia

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -54,6 +55,7 @@
         opacity: 0;
         transform: translateY(-20px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -84,6 +86,7 @@
         opacity: 0;
         transform: translateY(30px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -110,23 +113,21 @@
     }
   </style>
 </head>
+
 <body>
   <div class="demo-container">
     <div class="demo-header">
       <h1>🗓️ Koru Booking Widget</h1>
       <p>Sistema de reservas en tiempo real</p>
     </div>
-    
+
     <div id="widget-root"></div>
   </div>
 
-  <!-- Widget Script -->
-  <script
-    type="module"
-    src="/src/index.ts"
-    data-website-id="ws_demo"
-    data-app-id="app_demo"
-    data-app-manager-url="https://www.korusuite.com"
-  ></script>
+  <!-- Koru Widget Script (Production) -->
+  <script src="https://venticinquemauro.github.io/koru-booking/widget/koru-booking-widget.umd.js"
+    data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783" data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
+    data-app-manager-url="https://app-manager.vercel.app" async></script>
 </body>
+
 </html>
