@@ -1,4 +1,5 @@
-import { format, addDays, startOfWeek, isSameDay } from 'date-fns';
+import { format, addDays, startOfWeek, isSameDay, startOfMonth, endOfMonth, addMonths, subMonths, isBefore, startOfDay, getDay } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { apiClient, Service } from '../api/client';
 import { formatDate, isSlotPast } from '../utils/date';
 
@@ -13,12 +14,14 @@ export class DateTimePicker {
   private container: HTMLElement | null = null;
   private options: DateTimePickerOptions;
   private selectedDate: Date;
+  private currentMonth: Date;
   private availableSlots: string[] = [];
   private loading: boolean = false;
 
   constructor(options: DateTimePickerOptions) {
     this.options = options;
     this.selectedDate = new Date();
+    this.currentMonth = new Date();
   }
 
   async render(parent: HTMLElement): Promise<void> {
@@ -66,69 +69,148 @@ export class DateTimePicker {
   }
 
   private renderCalendar(parent: HTMLElement): void {
+    // Clear previous content
+    parent.innerHTML = '';
+
     const calendarTitle = document.createElement('h3');
     calendarTitle.textContent = 'Selecciona una fecha';
     calendarTitle.className = 'kb-calendar-title';
     parent.appendChild(calendarTitle);
 
+    // Month navigation header
+    const monthHeader = document.createElement('div');
+    monthHeader.className = 'kb-month-header';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'kb-month-nav';
+    prevBtn.innerHTML = '←';
+    prevBtn.onclick = () => this.changeMonth(-1);
+    monthHeader.appendChild(prevBtn);
+
+    const monthLabel = document.createElement('div');
+    monthLabel.className = 'kb-month-label';
+    monthLabel.textContent = format(this.currentMonth, 'MMMM yyyy', { locale: es });
+    monthHeader.appendChild(monthLabel);
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'kb-month-nav';
+    nextBtn.innerHTML = '→';
+    nextBtn.onclick = () => this.changeMonth(1);
+    monthHeader.appendChild(nextBtn);
+
+    parent.appendChild(monthHeader);
+
+    // Weekday headers
+    const weekdayHeader = document.createElement('div');
+    weekdayHeader.className = 'kb-weekday-header';
+    const weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+    weekdays.forEach(day => {
+      const dayLabel = document.createElement('div');
+      dayLabel.className = 'kb-weekday-label';
+      dayLabel.textContent = day;
+      weekdayHeader.appendChild(dayLabel);
+    });
+    parent.appendChild(weekdayHeader);
+
+    // Calendar grid
     const calendar = document.createElement('div');
     calendar.className = 'kb-calendar';
+    calendar.id = 'kb-calendar-grid';
 
-    // Generar 14 días desde hoy
-    for (let i = 0; i < 14; i++) {
-      const date = addDays(new Date(), i);
-      const dayCard = this.createDayCard(date);
-      calendar.appendChild(dayCard);
-    }
+    this.renderMonthDays(calendar);
 
     parent.appendChild(calendar);
   }
 
-  private createDayCard(date: Date): HTMLElement {
+  private renderMonthDays(calendar: HTMLElement): void {
+    calendar.innerHTML = '';
+
+    const monthStart = startOfMonth(this.currentMonth);
+    const monthEnd = endOfMonth(this.currentMonth);
+
+    // Get the day of week for the first day (0 = Sunday, 1 = Monday, etc.)
+    let startDay = getDay(monthStart);
+    // Adjust for Monday start (0 = Monday, 6 = Sunday)
+    startDay = startDay === 0 ? 6 : startDay - 1;
+
+    const today = startOfDay(new Date());
+
+    // Add empty cells for days before month starts
+    for (let i = 0; i < startDay; i++) {
+      const emptyCell = document.createElement('div');
+      emptyCell.className = 'kb-day-card kb-day-empty';
+      calendar.appendChild(emptyCell);
+    }
+
+    // Add days of the month
+    let currentDate = monthStart;
+    while (currentDate <= monthEnd) {
+      const dayCard = this.createDayCard(currentDate, today);
+      calendar.appendChild(dayCard);
+      currentDate = addDays(currentDate, 1);
+    }
+  }
+
+  private changeMonth(direction: number): void {
+    if (direction > 0) {
+      this.currentMonth = addMonths(this.currentMonth, 1);
+    } else {
+      this.currentMonth = subMonths(this.currentMonth, 1);
+    }
+
+    const calendarSection = this.container?.querySelector('.kb-calendar-section');
+    if (calendarSection) {
+      this.renderCalendar(calendarSection as HTMLElement);
+    }
+  }
+
+  private createDayCard(date: Date, today: Date): HTMLElement {
     const card = document.createElement('div');
     card.className = 'kb-day-card';
 
-    if (isSameDay(date, this.selectedDate)) {
+    const isPast = isBefore(date, today);
+    const isToday = isSameDay(date, today);
+    const isSelected = isSameDay(date, this.selectedDate);
+
+    // Mark past days
+    if (isPast) {
+      card.classList.add('kb-day-past');
+    }
+
+    // Mark today
+    if (isToday) {
+      card.classList.add('kb-day-today');
+    }
+
+    // Mark selected day
+    if (isSelected) {
       card.classList.add('kb-day-selected');
       card.style.backgroundColor = this.options.accentColor;
     }
-
-    const dayName = document.createElement('div');
-    dayName.className = 'kb-day-name';
-    dayName.textContent = format(date, 'EEE');
-    card.appendChild(dayName);
 
     const dayNumber = document.createElement('div');
     dayNumber.className = 'kb-day-number';
     dayNumber.textContent = format(date, 'd');
     card.appendChild(dayNumber);
 
-    card.onclick = async () => {
-      this.selectedDate = date;
-      this.updateCalendarSelection();
-      await this.loadSlots();
-    };
+    // Only allow clicking on current or future days
+    if (!isPast) {
+      card.onclick = async () => {
+        this.selectedDate = date;
+        this.updateCalendarSelection();
+        await this.loadSlots();
+      };
+    }
 
     return card;
   }
 
   private updateCalendarSelection(): void {
-    const calendar = this.container?.querySelector('.kb-calendar');
-    if (!calendar) return;
-
-    const dayCards = calendar.querySelectorAll('.kb-day-card');
-    dayCards.forEach((card, index) => {
-      const date = addDays(new Date(), index);
-      const htmlCard = card as HTMLElement;
-      
-      if (isSameDay(date, this.selectedDate)) {
-        htmlCard.classList.add('kb-day-selected');
-        htmlCard.style.backgroundColor = this.options.accentColor;
-      } else {
-        htmlCard.classList.remove('kb-day-selected');
-        htmlCard.style.backgroundColor = '';
-      }
-    });
+    // Re-render the current month to update selection
+    const calendarGrid = this.container?.querySelector('#kb-calendar-grid');
+    if (calendarGrid) {
+      this.renderMonthDays(calendarGrid as HTMLElement);
+    }
   }
 
   private async loadSlots(): Promise<void> {
