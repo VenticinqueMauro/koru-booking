@@ -370,10 +370,22 @@ export class BookingWidget extends KoruWidget {
     if (!this.widgetContainer) return;
 
     this.widgetContainer.innerHTML = `
-      <div class="kb-loading-overlay">
-        <div class="kb-spinner"></div>
-        <p>Procesando tu reserva...</p>
+      <div class="kb-loading-overlay" style="min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px;">
+        <div class="kb-spinner" style="
+          width: 48px;
+          height: 48px;
+          border: 4px solid #e2e8f0;
+          border-top-color: #0d9488;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        "></div>
+        <p style="margin-top: 20px; font-size: 16px; color: #64748b; font-weight: 500;">Procesando tu reserva...</p>
       </div>
+      <style>
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      </style>
     `;
   }
 
