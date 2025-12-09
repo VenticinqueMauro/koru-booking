@@ -43,3 +43,14 @@ coverage/
 # Misc
 *.tsbuildinfo
 .cache/
+
+# Claude Code
+.claude/
+
+# Temporary files
+*.png
+*.jpg
+*.jpeg
+!**/assets/**/*.png
+!**/assets/**/*.jpg
+!**/assets/**/*.jpeg
