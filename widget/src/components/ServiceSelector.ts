@@ -83,7 +83,7 @@ export class ServiceSelector {
     if (service.price) {
       const price = document.createElement('span');
       price.className = 'kb-service-price';
-      price.innerHTML = `${getIcon('dollar')} $${service.price}`;
+      price.innerHTML = `$${service.price}`;
       details.appendChild(price);
     }
 
