@@ -43,11 +43,43 @@ export class BookingWidget extends KoruWidget {
     super({
       name: 'koru-booking',
       version: '1.0.0',
+      debug: true,
     });
 
     // Inicializar apiClient con URL por defecto
     this.apiClient = createApiClient();
     this.log('BookingWidget constructor called');
+  }
+
+  /**
+   * Helper method to create DOM elements
+   */
+  private createElement<K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    options?: { className?: string; style?: Partial<CSSStyleDeclaration> }
+  ): HTMLElementTagNameMap[K] {
+    const element = document.createElement(tag);
+    if (options?.className) {
+      element.className = options.className;
+    }
+    if (options?.style) {
+      Object.assign(element.style, options.style);
+    }
+    return element;
+  }
+
+  /**
+   * Helper method for logging
+   */
+  private log(...args: any[]): void {
+    console.log('[BookingWidget]', ...args);
+  }
+
+  /**
+   * Helper method for tracking (stub for now)
+   */
+  private track(event: string, data?: any): void {
+    console.log('[Analytics]', event, data);
   }
 
   /**
@@ -100,7 +132,7 @@ export class BookingWidget extends KoruWidget {
     // Cargar servicios
     try {
       console.log('Fetching services from API...');
-      this.services = await this.apiClient.getServices();
+      this.services = await apiClient.getServices();
       console.log('Services loaded:', this.services);
       this.log('Services loaded', this.services);
     } catch (error) {
@@ -329,7 +361,7 @@ export class BookingWidget extends KoruWidget {
     this.showLoading();
 
     try {
-      this.bookingResult = await this.apiClient.createBooking({
+      this.bookingResult = await apiClient.createBooking({
         serviceId: this.selectedService.id,
         date: this.selectedDate,
         time: this.selectedTime,
