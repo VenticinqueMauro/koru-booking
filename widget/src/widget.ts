@@ -1,23 +1,25 @@
-import { apiClient, Service, BookingResponse } from './api/client';
+import { KoruWidget, WidgetConfig } from '@redclover/koru-sdk';
+import { createApiClient, APIClient, Service, BookingResponse } from './api/client';
 import { ServiceSelector } from './components/ServiceSelector';
 import { DateTimePicker } from './components/DateTimePicker';
 import { CustomerForm, CustomerData } from './components/CustomerForm';
 import { Confirmation } from './components/Confirmation';
 import './styles/widget.css';
 
-export interface BookingWidgetConfig {
+export interface BookingWidgetConfig extends WidgetConfig {
+  apiUrl?: string;
   layout?: 'list' | 'grid' | 'button';
   stepInterval?: number;
   accentColor?: string;
   notifyEmail?: string;
-  displayMode?: 'inline' | 'modal'; // inline = siempre visible, modal = con trigger button
+  displayMode?: 'inline' | 'modal';
   triggerText?: string;
   triggerPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmation';
 
-export class BookingWidget {
+export class BookingWidget extends KoruWidget {
   private widgetContainer: HTMLDivElement | null = null;
   private modalOverlay: HTMLDivElement | null = null;
   private triggerButton: HTMLButtonElement | null = null;
@@ -27,8 +29,9 @@ export class BookingWidget {
   private selectedDate: string = '';
   private selectedTime: string = '';
   private bookingResult: BookingResponse | null = null;
-  private config: BookingWidgetConfig | null = null;
+  private widgetConfig: BookingWidgetConfig | null = null;
   private isOpen: boolean = false;
+  private apiClient: APIClient;
 
   // Componentes
   private serviceSelector: ServiceSelector | null = null;
@@ -37,98 +40,54 @@ export class BookingWidget {
   private confirmation: Confirmation | null = null;
 
   constructor() {
-    console.log('📦 BookingWidget constructor called');
-  }
-
-  /**
-   * Helper method to create DOM elements
-   */
-  private createElement<K extends keyof HTMLElementTagNameMap>(
-    tag: K,
-    options?: { className?: string; style?: Partial<CSSStyleDeclaration> }
-  ): HTMLElementTagNameMap[K] {
-    const element = document.createElement(tag);
-    if (options?.className) {
-      element.className = options.className;
-    }
-    if (options?.style) {
-      Object.assign(element.style, options.style);
-    }
-    return element;
-  }
-
-  /**
-   * Helper method for logging
-   */
-  private log(...args: any[]): void {
-    console.log('[BookingWidget]', ...args);
-  }
-
-  /**
-   * Helper method for tracking (stub for now)
-   */
-  private track(event: string, data?: any): void {
-    console.log('[Analytics]', event, data);
-  }
-
-  /**
-   * Override start to bypass Koru SDK authentication in development
-   */
-  async start(): Promise<void> {
-    console.log('🚀 BookingWidget.start() called');
-    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    console.log('isDev:', isDev);
-
-    if (isDev) {
-      this.log('🚀 Development mode detected: Bypassing Koru SDK auth');
-
-      const mockConfig: BookingWidgetConfig = {
-        accentColor: '#0d9488',
-        layout: 'list',
-        stepInterval: 30,
-        displayMode: 'modal', // Cambiar a 'inline' para modo embebido
-        triggerText: 'Reservar cita',
-        triggerPosition: 'bottom-right',
-      };
-
-      try {
-        console.log('Calling onInit...');
-        await this.onInit(mockConfig);
-        console.log('onInit completed, calling onRender...');
-        await this.onRender(mockConfig);
-        console.log('onRender completed');
-      } catch (error) {
-        console.error('Error starting widget in dev mode:', error);
+    super({
+      name: 'koru-booking',
+      version: '1.0.0',
+      options: {
+        debug: true,
+        cache: true,
+        analytics: false
       }
-      return;
-    }
+    });
 
-    // In production, would delegate to Koru SDK
-    // For now, just log a warning
-    console.warn('Production mode not implemented yet');
+    // Inicializar apiClient con URL por defecto
+    this.apiClient = createApiClient();
+    this.log('BookingWidget constructor called');
   }
 
-  async onInit(config: BookingWidgetConfig): Promise<void> {
-    console.log('📝 onInit called with config:', config);
-    this.log('Booking Widget initialized', config);
+  /**
+   * Lifecycle hook: Initialize widget state after authorization
+   * Loads services from the backend API
+   */
+  async onInit(config: WidgetConfig): Promise<void> {
+    this.log('onInit called with config:', config);
+    const typedConfig = config as BookingWidgetConfig;
+    this.widgetConfig = typedConfig;
+
+    // Configurar API client con URL desde config o fallback a env var
+    const apiUrl = typedConfig.apiUrl || import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:4000';
+    this.apiClient = createApiClient(apiUrl);
+    this.log('API Client configured with URL:', apiUrl);
 
     // Cargar servicios
     try {
-      console.log('Fetching services from API...');
-      this.services = await apiClient.getServices();
-      console.log('Services loaded:', this.services);
-      this.log('Services loaded', this.services);
+      this.log('Fetching services from API...');
+      this.services = await this.apiClient.getServices();
+      this.log('Services loaded:', this.services);
     } catch (error) {
-      console.error('Error loading services:', error);
-      this.log('Error loading services', error);
+      this.log('Error loading services:', error);
       throw error;
     }
   }
 
-  async onRender(config: BookingWidgetConfig): Promise<void> {
-    console.log('🎨 onRender called');
+  /**
+   * Lifecycle hook: Render widget UI
+   * Called after onInit completes successfully
+   */
+  async onRender(config: WidgetConfig): Promise<void> {
+    this.log('onRender called');
     const typedConfig = config as BookingWidgetConfig;
-    this.config = typedConfig;
+    this.widgetConfig = typedConfig;
 
     const displayMode = typedConfig.displayMode || 'inline';
 
@@ -138,6 +97,70 @@ export class BookingWidget {
       this.renderInlineMode(typedConfig);
     }
   }
+
+  /**
+   * Lifecycle hook: Cleanup when widget is stopped
+   * Removes all DOM elements and clears component references
+   */
+  async onDestroy(): Promise<void> {
+    this.clearCurrentComponent();
+    this.widgetContainer?.remove();
+    this.modalOverlay?.remove();
+    this.triggerButton?.remove();
+    this.widgetContainer = null;
+    this.modalOverlay = null;
+    this.triggerButton = null;
+    this.log('Widget destroyed');
+  }
+
+  /**
+   * Optional lifecycle hook: Update config without full re-render
+   * Called when widget.reload() is invoked
+   */
+  async onConfigUpdate(config: WidgetConfig): Promise<void> {
+    this.log('Config updated', config);
+    const typedConfig = config as BookingWidgetConfig;
+    this.widgetConfig = typedConfig;
+    await this.renderStep(typedConfig);
+  }
+
+  /**
+   * Override start() para soportar modo desarrollo local
+   * En desarrollo: usa config mock sin autenticación
+   * En producción: delega al SDK de Koru para autenticación completa
+   */
+  async start(): Promise<void> {
+    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (isDev) {
+      this.log('🚀 Development mode: Using mock config');
+
+      const mockConfig: BookingWidgetConfig = {
+        apiUrl: import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:4000',
+        accentColor: '#0d9488',
+        layout: 'list',
+        stepInterval: 30,
+        displayMode: 'modal', // Cambiar a 'inline' para modo embebido
+        triggerText: 'Reservar cita',
+        triggerPosition: 'bottom-right',
+      };
+
+      try {
+        await this.onInit(mockConfig);
+        await this.onRender(mockConfig);
+        this.log('✅ Widget started successfully in dev mode');
+      } catch (error) {
+        this.log('❌ Error starting widget in dev mode:', error);
+        throw error;
+      }
+      return;
+    }
+
+    // En producción, usar el método start() del SDK
+    this.log('🚀 Production mode: Using Koru SDK authentication');
+    await super.start();
+  }
+
 
   private renderInlineMode(config: BookingWidgetConfig): void {
     console.log('Rendering inline mode...');
@@ -344,7 +367,7 @@ export class BookingWidget {
     this.showLoading();
 
     try {
-      this.bookingResult = await apiClient.createBooking({
+      this.bookingResult = await this.apiClient.createBooking({
         serviceId: this.selectedService.id,
         date: this.selectedDate,
         time: this.selectedTime,
@@ -412,21 +435,10 @@ export class BookingWidget {
     this.widgetContainer.appendChild(errorDiv);
 
     setTimeout(() => {
-      if (this.config) {
-        this.goToStep(this.currentStep, this.config as BookingWidgetConfig);
+      if (this.widgetConfig) {
+        this.goToStep(this.currentStep, this.widgetConfig);
       }
     }, 3000);
   }
 
-  async onDestroy(): Promise<void> {
-    this.clearCurrentComponent();
-    this.widgetContainer?.remove();
-    this.widgetContainer = null;
-    this.log('Widget destroyed');
-  }
-
-  async onConfigUpdate(config: BookingWidgetConfig): Promise<void> {
-    this.log('Config updated', config);
-    await this.renderStep(config);
-  }
 }

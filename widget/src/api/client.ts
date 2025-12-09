@@ -89,4 +89,12 @@ export class APIClient {
   }
 }
 
+/**
+ * Factory function para crear instancias de APIClient
+ */
+export const createApiClient = (baseURL?: string): APIClient => {
+  return new APIClient(baseURL);
+};
+
+// Exportar instancia por defecto para compatibilidad
 export const apiClient = new APIClient();
