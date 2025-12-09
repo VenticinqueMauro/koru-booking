@@ -115,7 +115,7 @@ export class BookingWidget extends KoruWidget {
     const typedConfig = config as BookingWidgetConfig;
     this.config = typedConfig;
 
-    const displayMode = typedConfig.displayMode || 'inline';
+    const displayMode = typedConfig.displayMode || 'modal';
 
     if (displayMode === 'modal') {
       this.renderModalMode(typedConfig);
