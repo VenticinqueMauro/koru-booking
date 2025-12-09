@@ -143,44 +143,12 @@
   transform: translateY(0) scale(0.98);
 }
 
-/* Trigger Button Positions */
-.kb-trigger-bottom-right {
-  bottom: 24px;
-  right: 24px;
-}
-
-.kb-trigger-bottom-left {
-  bottom: 24px;
-  left: 24px;
-}
-
-.kb-trigger-top-right {
-  top: 24px;
-  right: 24px;
-}
-
-.kb-trigger-top-left {
-  top: 24px;
-  left: 24px;
-}
+/* Position is now applied via inline styles for maximum flexibility */
 
 @media (max-width: 640px) {
   .kb-trigger-button {
     padding: 12px 20px;
     font-size: 15px;
-  }
-
-  .kb-trigger-bottom-right,
-  .kb-trigger-bottom-left {
-    bottom: 16px;
-  }
-
-  .kb-trigger-bottom-right {
-    right: 16px;
-  }
-
-  .kb-trigger-bottom-left {
-    left: 16px;
   }
 }
 

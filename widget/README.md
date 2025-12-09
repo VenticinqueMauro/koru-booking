@@ -46,13 +46,32 @@ La configuración del widget se gestiona desde [Koru Platform](https://app-manag
 
 | Opción | Tipo | Descripción | Por Defecto |
 |--------|------|-------------|-------------|
-| `apiUrl` | string | URL del backend API | - |
-| `layout` | `list` \| `grid` \| `button` | Diseño de servicios | `list` |
-| `accentColor` | string | Color principal (Hex) | `#00C896` |
-| `stepInterval` | number | Intervalo de slots (minutos) | `30` |
-| `displayMode` | `inline` \| `modal` | Modo de visualización | `inline` |
-| `triggerText` | string | Texto del botón (modo modal) | `Reservar ahora` |
-| `triggerPosition` | string | Posición del botón modal | `bottom-right` |
+| `accentColor` | string | Color principal del widget (formato Hex) | `#00C896` |
+| `displayMode` | `inline` \| `modal` | Modo de visualización | `modal` |
+| `triggerText` | string | Texto del botón disparador (solo modo modal) | `Reservar ahora` |
+| `position` | object | Posición del botón flotante en píxeles | `{ bottom: 24, right: 24 }` |
+
+### Configuración de Posición
+
+El objeto `position` permite ajustar la ubicación exacta del botón flotante (solo en modo `modal`):
+
+```json
+{
+  "position": {
+    "bottom": 24,    // Distancia desde abajo en píxeles
+    "right": 24      // Distancia desde la derecha en píxeles
+  }
+}
+```
+
+Puedes usar cualquier combinación de `bottom`/`top` y `left`/`right`:
+- **Esquina inferior derecha:** `{ bottom: 24, right: 24 }` (por defecto)
+- **Esquina inferior izquierda:** `{ bottom: 24, left: 24 }`
+- **Esquina superior derecha:** `{ top: 24, right: 24 }`
+- **Esquina superior izquierda:** `{ top: 24, left: 24 }`
+- **Posición personalizada:** `{ bottom: 100, right: 50 }` (útil si tienes un botón de WhatsApp u otros elementos)
+
+**Nota:** Las configuraciones de `apiUrl`, `layout` y `stepInterval` se manejan desde el backoffice y no son configurables desde el widget.
 
 ## 🎨 Características
 

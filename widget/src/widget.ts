@@ -6,15 +6,18 @@ import { CustomerForm, CustomerData } from './components/CustomerForm';
 import { Confirmation } from './components/Confirmation';
 import './styles/widget.css';
 
+export interface WidgetPosition {
+  bottom?: number;
+  top?: number;
+  left?: number;
+  right?: number;
+}
+
 export interface BookingWidgetConfig extends WidgetConfig {
-  apiUrl?: string;
-  layout?: 'list' | 'grid' | 'button';
-  stepInterval?: number;
   accentColor?: string;
-  notifyEmail?: string;
   displayMode?: 'inline' | 'modal';
   triggerText?: string;
-  triggerPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  position?: WidgetPosition;
 }
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmation';
@@ -63,11 +66,12 @@ export class BookingWidget extends KoruWidget {
 
       const mockConfig: BookingWidgetConfig = {
         accentColor: '#0d9488',
-        layout: 'list',
-        stepInterval: 30,
         displayMode: 'modal', // Cambiar a 'inline' para modo embebido
         triggerText: 'Reservar cita',
-        triggerPosition: 'bottom-right',
+        position: {
+          bottom: 24,
+          right: 24,
+        },
       };
 
       try {
@@ -156,8 +160,20 @@ export class BookingWidget extends KoruWidget {
       <span>${triggerText}</span>
     `;
 
-    const position = config.triggerPosition || 'bottom-right';
-    this.triggerButton.classList.add(`kb-trigger-${position}`);
+    // Apply custom position using inline styles
+    const position = config.position || { bottom: 24, right: 24 };
+    if (position.bottom !== undefined) {
+      this.triggerButton.style.bottom = `${position.bottom}px`;
+    }
+    if (position.top !== undefined) {
+      this.triggerButton.style.top = `${position.top}px`;
+    }
+    if (position.left !== undefined) {
+      this.triggerButton.style.left = `${position.left}px`;
+    }
+    if (position.right !== undefined) {
+      this.triggerButton.style.right = `${position.right}px`;
+    }
 
     this.triggerButton.onclick = () => this.openModal(config);
     document.body.appendChild(this.triggerButton);
@@ -243,14 +259,13 @@ export class BookingWidget extends KoruWidget {
     this.widgetContainer.appendChild(stepContainer);
 
     const accentColor = config.accentColor || '#00C896';
-    const layout = config.layout || 'list';
 
     switch (this.currentStep) {
       case 'service':
         this.serviceSelector = new ServiceSelector({
           services: this.services,
           accentColor,
-          layout,
+          layout: 'list', // Layout is now managed from backoffice, hardcoded to 'list'
           onSelect: (service) => this.handleServiceSelect(service, config),
         });
         this.serviceSelector.render(stepContainer);
