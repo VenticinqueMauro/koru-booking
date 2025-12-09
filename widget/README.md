@@ -30,7 +30,7 @@ Los archivos compilados estarán en `dist/`.
   src="https://cdn.tu-dominio.com/koru-booking-widget.umd.js"
   data-website-id="ws_xxx"
   data-app-id="app_xxx"
-  data-app-manager-url="https://app.koru.com"
+  data-app-manager-url="https://www.korusuite.com"
 ></script>
 ```
 
@@ -52,7 +52,7 @@ Crea un archivo `.env` basado en `.env.example`:
 ```env
 VITE_KORU_WEBSITE_ID=ws_xxx
 VITE_KORU_APP_ID=app_xxx
-VITE_KORU_URL=https://app.koru.com
+VITE_KORU_URL=https://www.korusuite.com
 VITE_BACKEND_API_URL=http://localhost:4000
 ```
 

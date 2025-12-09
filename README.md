@@ -162,7 +162,7 @@ Cada subdirectorio tiene su propio README con instrucciones específicas:
 
 ## 🔗 Enlaces
 
-- [Koru Platform](https://app.koru.com)
+- [Koru Platform](https://www.korusuite.com)
 - [Koru React SDK](https://www.npmjs.com/package/@redclover/koru-react-sdk)
 - [Koru Widget SDK](https://www.npmjs.com/package/@redclover/koru-sdk)
 

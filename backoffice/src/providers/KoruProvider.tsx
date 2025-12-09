@@ -12,7 +12,7 @@ export function KoruWrapper({ children }: { children: ReactNode }) {
     <KoruProvider
       websiteId={import.meta.env.VITE_KORU_WEBSITE_ID}
       appId={import.meta.env.VITE_KORU_APP_ID}
-      koruUrl={import.meta.env.VITE_KORU_URL || 'https://app.koru.com'}
+      koruUrl={import.meta.env.VITE_KORU_URL || 'https://www.korusuite.com'}
       options={{ cache: true, debug: false }}
     >
       <KoruProtected
