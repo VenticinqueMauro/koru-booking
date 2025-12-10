@@ -10,7 +10,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@redclover/koru-react-sdk": "latest",
     "@tanstack/react-query": "^5.17.0",
     "axios": "^1.13.2",
     "date-fns": "^3.0.0",

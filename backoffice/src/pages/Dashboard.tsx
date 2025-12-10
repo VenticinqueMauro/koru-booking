@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom';
-import { useKoruAuth } from '../hooks/useKoruAuth';
 import { Layout } from '../components/Layout';
 import { Card } from '../components/ui';
 import './Dashboard.css';
 
 export default function Dashboard() {
-  useKoruAuth();
 
   return (
     <Layout>
