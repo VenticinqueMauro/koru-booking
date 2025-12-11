@@ -2,7 +2,7 @@
     "name": "koru-booking-root",
     "private": true,
     "scripts": {
-        "deploy": "npm run build:all && npm run clean:dist-git && npx gh-pages -d dist --repo https://github.com/VenticinqueMauro/koru-booking.git --branch gh-pages --dotfiles --user \"Venticinque Mauro <102001296+VenticinqueMauro@users.noreply.github.com>\"",
+        "deploy": "npm run build:all && node scripts/deploy-manual.js",
         "build:all": "npm run build:backoffice && npm run build:widget && npm run copy:dist",
         "build:backoffice": "cd backoffice && npm install && npm run build",
         "build:widget": "cd widget && npm install && npm run build",
