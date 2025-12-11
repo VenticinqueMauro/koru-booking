@@ -3,8 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { schedulesApi } from '../api/schedules';
 import { Schedule, CreateScheduleInput } from '../types';
 import { Layout } from '../components/Layout';
-import { Card, Button } from '../components/ui';
-import './Schedule.css';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 const DAYS = [
   { value: 1, label: 'Lunes' },
@@ -50,7 +54,9 @@ export default function SchedulePage() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="schedule-loading">Cargando horarios...</div>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       </Layout>
     );
   }
@@ -58,22 +64,25 @@ export default function SchedulePage() {
   if (error) {
     return (
       <Layout>
-        <div className="schedule-error">Error al cargar horarios</div>
+        <div className="flex h-[50vh] items-center justify-center text-destructive gap-2">
+          <AlertCircle className="h-5 w-5" />
+          Error al cargar horarios
+        </div>
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="schedule">
-        <header className="page-header">
-          <h1 className="page-title">Configuración de Horarios</h1>
-          <p className="page-subtitle">
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-3xl font-bold tracking-tight">Configuración de Horarios</h1>
+          <p className="text-muted-foreground mt-2">
             Define los horarios de atención para cada día de la semana
           </p>
         </header>
 
-        <div className="schedule-grid">
+        <div className="space-y-4">
           {DAYS.map((day) => (
             <DayScheduleRow
               key={day.value}
@@ -115,78 +124,75 @@ function DayScheduleRow({ label, dayValue, currentSchedule, onSave, isSaving }: 
   };
 
   return (
-    <Card
-      padding="lg"
-      className={`schedule-day-card ${!enabled ? 'schedule-day-disabled' : ''}`}
-    >
-      <div className="schedule-day-content">
-        <div className="schedule-day-header">
-          <label className="schedule-day-toggle">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={(e) => setEnabled(e.target.checked)}
-              className="schedule-checkbox"
-            />
-            <strong className="schedule-day-label">{label}</strong>
-          </label>
+    <Card className={!enabled ? 'opacity-70 bg-muted/30' : ''}>
+      <CardContent className="p-4 sm:p-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
+
+        <div className="flex items-center gap-4 min-w-[150px]">
+          <Switch
+            checked={enabled}
+            onCheckedChange={setEnabled}
+            id={`day-${dayValue}`}
+          />
+          <Label htmlFor={`day-${dayValue}`} className="text-base font-medium cursor-pointer">
+            {label}
+          </Label>
         </div>
 
         {enabled && (
-          <>
-            <div className="schedule-day-times">
-              <div className="schedule-time-group">
-                <label className="schedule-time-label">Horario</label>
-                <div className="schedule-time-inputs">
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="schedule-time-input"
-                  />
-                  <span className="schedule-time-separator">—</span>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="schedule-time-input"
-                  />
-                </div>
-              </div>
+          <div className="flex-1 w-full flex flex-col md:flex-row gap-6 items-start md:items-center">
 
-              <div className="schedule-break-group">
-                <label className="schedule-time-label">Break (opcional)</label>
-                <div className="schedule-time-inputs">
-                  <input
-                    type="time"
-                    value={breakStart}
-                    onChange={(e) => setBreakStart(e.target.value)}
-                    className="schedule-time-input"
-                  />
-                  <span className="schedule-time-separator">—</span>
-                  <input
-                    type="time"
-                    value={breakEnd}
-                    onChange={(e) => setBreakEnd(e.target.value)}
-                    className="schedule-time-input"
-                  />
-                </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs text-muted-foreground">Horario Laboral</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-28"
+                />
+                <span className="text-muted-foreground text-sm">a</span>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-28"
+                />
               </div>
             </div>
 
-            <div className="schedule-day-actions">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs text-muted-foreground">Break / Descanso (Opcional)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="time"
+                  value={breakStart}
+                  onChange={(e) => setBreakStart(e.target.value)}
+                  className="w-28"
+                />
+                <span className="text-muted-foreground text-sm">a</span>
+                <Input
+                  type="time"
+                  value={breakEnd}
+                  onChange={(e) => setBreakEnd(e.target.value)}
+                  className="w-28"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 md:text-right w-full md:w-auto mt-2 md:mt-0">
               <Button
                 onClick={handleSave}
                 disabled={isSaving}
                 variant="secondary"
                 size="sm"
               >
-                {isSaving ? 'Guardando...' : 'Guardar'}
+                {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
+                {isSaving ? 'Guardando' : 'Guardar'}
               </Button>
             </div>
-          </>
+          </div>
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 }

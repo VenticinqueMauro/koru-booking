@@ -3,8 +3,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { settingsApi } from '../api/settings';
 import { UpdateWidgetSettingsInput, WidgetSettings } from '../types';
 import { Layout } from '../components/Layout';
-import { Card, Button, Input } from '../components/ui';
-import './Settings.css';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Loader2 } from 'lucide-react';
 
 export default function Settings() {
   const queryClient = useQueryClient();
@@ -39,6 +49,7 @@ export default function Settings() {
     mutationFn: settingsApi.update,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
+      // Suggestion: Use a proper toast notification here
       alert('Configuración guardada correctamente');
     },
     onError: () => {
@@ -46,13 +57,17 @@ export default function Settings() {
     }
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: name === 'stepInterval' ? Number(value) : value
     }));
   };
+
+  const handleSelectChange = (value: string) => {
+    setFormData(prev => ({ ...prev, layout: value as UpdateWidgetSettingsInput['layout'] }));
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,122 +77,140 @@ export default function Settings() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="settings-loading">Cargando configuración...</div>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="settings">
-        <header className="page-header">
-          <h1 className="page-title">Configuración del Widget</h1>
-          <p className="page-subtitle">
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-3xl font-bold tracking-tight">Configuración del Widget</h1>
+          <p className="text-muted-foreground mt-2">
             Personaliza el aspecto y comportamiento del widget de reservas
           </p>
         </header>
 
-        <Card padding="lg" className="settings-form-card">
-          <form onSubmit={handleSubmit} className="settings-form">
-            <div className="settings-form-section">
-              <h3 className="settings-section-title">Apariencia</h3>
+        <Card>
+          <CardHeader>
+            <CardTitle>Ajustes Generales</CardTitle>
+            <CardDescription>Modifica la apariencia y funcionamiento de tu widget.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-8">
 
-              <div className="settings-form-grid">
-                <div className="settings-form-field">
-                  <label className="settings-label">Diseño del Widget</label>
-                  <select
-                    name="layout"
-                    value={formData.layout}
-                    onChange={handleChange}
-                    className="settings-select"
-                  >
-                    <option value="list">Lista</option>
-                    <option value="grid">Cuadrícula</option>
-                    <option value="compact">Compacto</option>
-                  </select>
-                </div>
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Apariencia</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Diseño del Widget</Label>
+                    <Select
+                      value={formData.layout}
+                      onValueChange={handleSelectChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un diseño" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="list">Lista</SelectItem>
+                        <SelectItem value="grid">Cuadrícula</SelectItem>
+                        <SelectItem value="compact">Compacto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Cómo se mostrarán los servicios en el widget.</p>
+                  </div>
 
-                <div className="settings-form-field">
-                  <label className="settings-label">Color de Acento</label>
-                  <div className="settings-color-picker">
-                    <input
-                      type="color"
-                      name="accentColor"
-                      value={formData.accentColor}
-                      onChange={handleChange}
-                      className="settings-color-input"
-                    />
-                    <input
-                      type="text"
-                      name="accentColor"
-                      value={formData.accentColor}
-                      onChange={handleChange}
-                      className="settings-color-text"
-                    />
+                  <div className="space-y-2">
+                    <Label htmlFor="accentColor">Color de Acento</Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="color"
+                        id="accentColor"
+                        name="accentColor"
+                        value={formData.accentColor}
+                        onChange={handleChange}
+                        className="w-12 h-10 p-1 cursor-pointer"
+                      />
+                      <Input
+                        type="text"
+                        name="accentColor"
+                        value={formData.accentColor}
+                        onChange={handleChange}
+                        className="font-mono"
+                        placeholder="#000000"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="settings-form-section">
-              <h3 className="settings-section-title">Configuración</h3>
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Configuración</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="stepInterval">Intervalo de Tiempo (minutos)</Label>
+                    <Input
+                      id="stepInterval"
+                      type="number"
+                      name="stepInterval"
+                      value={formData.stepInterval}
+                      onChange={handleChange}
+                    />
+                    <p className="text-xs text-muted-foreground">Intervalos mostrados en la selección de hora.</p>
+                  </div>
 
-              <div className="settings-form-grid">
-                <Input
-                  label="Intervalo de Tiempo (minutos)"
-                  type="number"
-                  name="stepInterval"
-                  value={formData.stepInterval}
-                  onChange={handleChange}
-                  fullWidth
-                  helperText="Intervalos en los que se mostrarán los horarios disponibles"
-                />
-
-                <Input
-                  label="Zona Horaria"
-                  type="text"
-                  name="timezone"
-                  value={formData.timezone}
-                  onChange={handleChange}
-                  fullWidth
-                  disabled
-                  helperText="Zona horaria para las reservas"
-                />
+                  <div className="space-y-2">
+                    <Label htmlFor="timezone">Zona Horaria</Label>
+                    <Input
+                      id="timezone"
+                      type="text"
+                      name="timezone"
+                      value={formData.timezone}
+                      disabled
+                    />
+                    <p className="text-xs text-muted-foreground">Zona horaria predeterminada.</p>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="settings-form-section">
-              <h3 className="settings-section-title">Notificaciones</h3>
-
-              <Input
-                label="Email de Notificaciones"
-                type="email"
-                name="notifyEmail"
-                value={formData.notifyEmail}
-                onChange={handleChange}
-                placeholder="admin@example.com"
-                fullWidth
-                helperText="Recibirás notificaciones cuando se realicen nuevas reservas"
-              />
-            </div>
-
-            {error && (
-              <div className="settings-error">
-                Error al cargar la configuración
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Notificaciones</h3>
+                <div className="space-y-2 max-w-md">
+                  <Label htmlFor="notifyEmail">Email de Notificaciones</Label>
+                  <Input
+                    id="notifyEmail"
+                    type="email"
+                    name="notifyEmail"
+                    value={formData.notifyEmail}
+                    onChange={handleChange}
+                    placeholder="admin@example.com"
+                  />
+                  <p className="text-xs text-muted-foreground">Recibirás alertas de nuevas reservas aquí.</p>
+                </div>
               </div>
-            )}
 
-            <div className="settings-form-actions">
-              <Button
-                type="submit"
-                variant="primary"
-                isLoading={mutation.isPending}
-                fullWidth
-              >
-                {mutation.isPending ? 'Guardando...' : 'Guardar Configuración'}
-              </Button>
-            </div>
-          </form>
+              {error && (
+                <div className="text-destructive text-sm font-medium">
+                  Error al cargar la configuración
+                </div>
+              )}
+
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  className="w-full md:w-auto"
+                  disabled={mutation.isPending}
+                >
+                  {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {mutation.isPending ? 'Guardando...' : 'Guardar Configuración'}
+                </Button>
+              </div>
+
+            </form>
+          </CardContent>
         </Card>
       </div>
     </Layout>

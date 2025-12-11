@@ -1,7 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { superAdminApi } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
-import './SuperAdminDashboard.css';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Users, CheckCircle, Mail, RotateCw, LogOut } from 'lucide-react';
 
 interface Account {
     id: string;
@@ -83,139 +104,156 @@ const SuperAdminDashboard: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="super-admin-container">
-                <div className="loading">Loading...</div>
+            <div className="flex min-h-screen items-center justify-center p-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="super-admin-container">
-                <div className="error">{error}</div>
+            <div className="flex min-h-screen items-center justify-center p-4 text-destructive">
+                {error}
             </div>
         );
     }
 
     return (
-        <div className="super-admin-container">
-            <header className="super-admin-header">
+        <div className="min-h-screen bg-muted/40 p-4 md:p-8 space-y-8">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1>Super Admin Dashboard</h1>
-                    <p>User Account Management</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Super Admin Dashboard</h1>
+                    <p className="text-muted-foreground">User Account Management</p>
                 </div>
-                <button onClick={logout} className="logout-button">
-                    Logout
-                </button>
+                <Button variant="outline" onClick={logout}>
+                    <LogOut className="mr-2 h-4 w-4" /> Logout
+                </Button>
             </header>
 
             {/* Summary Stats */}
-            <div className="stats-summary">
-                <div className="stat-item">
-                    <span className="stat-number">{accounts.length}</span>
-                    <span className="stat-text">Total Accounts</span>
-                </div>
-                <div className="stat-item">
-                    <span className="stat-number">{accounts.filter(a => a.active).length}</span>
-                    <span className="stat-text">Active</span>
-                </div>
-                <div className="stat-item">
-                    <span className="stat-number">{accounts.filter(a => a.email).length}</span>
-                    <span className="stat-text">With Credentials</span>
-                </div>
+            <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Accounts</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{accounts.length}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
+                        <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{accounts.filter(a => a.active).length}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">With Credentials</CardTitle>
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{accounts.filter(a => a.email).length}</div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Accounts Table */}
-            <div className="accounts-section">
-                <div className="section-header">
-                    <h2>Registered Users</h2>
-                    <button className="refresh-button" onClick={loadData}>
-                        Refresh
-                    </button>
-                </div>
-
-                <div className="accounts-table-container">
-                    <table className="accounts-table">
-                        <thead>
-                            <tr>
-                                <th>Business Name</th>
-                                <th>Website ID</th>
-                                <th>App ID</th>
-                                <th>Email</th>
-                                <th>Reference Website</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Registered Users</CardTitle>
+                        <CardDescription>Manage your platform users and their credentials.</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={loadData}>
+                        <RotateCw className="mr-2 h-4 w-4" /> Refresh
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Business Name</TableHead>
+                                <TableHead>Website ID</TableHead>
+                                <TableHead>App ID</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Reference Website</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Created</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {accounts.map((account) => (
-                                <tr key={account.id}>
-                                    <td>
-                                        <strong>{account.businessName || 'N/A'}</strong>
-                                    </td>
-                                    <td>
-                                        <code className="code-text">{account.websiteId}</code>
-                                    </td>
-                                    <td>
-                                        <code className="code-text">{account.appId}</code>
-                                    </td>
-                                    <td>
-                                        {account.email ? (
-                                            <span className="email-text">{account.email}</span>
-                                        ) : (
-                                            <span className="not-set">Not set</span>
-                                        )}
-                                    </td>
-                                    <td>
+                                <TableRow key={account.id}>
+                                    <TableCell className="font-medium">{account.businessName || 'N/A'}</TableCell>
+                                    <TableCell><code className="bg-muted px-1 py-0.5 rounded text-xs">{account.websiteId}</code></TableCell>
+                                    <TableCell><code className="bg-muted px-1 py-0.5 rounded text-xs">{account.appId}</code></TableCell>
+                                    <TableCell>
+                                        {account.email || <span className="text-muted-foreground italic text-xs">Not set</span>}
+                                    </TableCell>
+                                    <TableCell>
                                         {account.referenceWebsite ? (
-                                            <a href={account.referenceWebsite} target="_blank" rel="noopener noreferrer" className="website-link">
-                                                {account.referenceWebsite}
+                                            <a href={account.referenceWebsite} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline underline-offset-4">
+                                                Link
                                             </a>
                                         ) : (
-                                            <span className="not-set">Not set</span>
+                                            <span className="text-muted-foreground italic text-xs">Not set</span>
                                         )}
-                                    </td>
-                                    <td>
-                                        <span className={`status-badge ${account.active ? 'active' : 'inactive'}`}>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={account.active ? 'default' : 'secondary'}>
                                             {account.active ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </td>
-                                    <td>{new Date(account.createdAt).toLocaleDateString()}</td>
-                                    <td>
-                                        <button
-                                            className="edit-button"
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-muted-foreground text-xs">
+                                        {new Date(account.createdAt).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
                                             onClick={() => handleEditAccount(account)}
                                         >
                                             Edit
-                                        </button>
-                                    </td>
-                                </tr>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
                             ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
-            {/* Edit Account Modal */}
-            {editingAccount && (
-                <div className="modal-overlay" onClick={handleCloseModal}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>Edit Account</h3>
-                            <button className="modal-close" onClick={handleCloseModal}>×</button>
-                        </div>
+            <Dialog open={!!editingAccount} onOpenChange={(open) => !open && handleCloseModal()}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Edit Account</DialogTitle>
+                        <DialogDescription>
+                            Make changes to the account credentials and details.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                        <div className="account-info">
-                            <p><strong>Business:</strong> {editingAccount.businessName || 'N/A'}</p>
-                            <p><strong>Website ID:</strong> <code>{editingAccount.websiteId}</code></p>
-                            <p><strong>App ID:</strong> <code>{editingAccount.appId}</code></p>
-                        </div>
+                    {editingAccount && (
+                        <form onSubmit={handleSaveAccount} className="grid gap-4 py-4">
+                            {/* Read only info */}
+                            <div className="grid gap-2 text-sm bg-muted/50 p-3 rounded-md">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Business:</span>
+                                    <span className="font-medium">{editingAccount.businessName || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Website ID:</span>
+                                    <code className="text-xs">{editingAccount.websiteId}</code>
+                                </div>
+                            </div>
 
-                        <form onSubmit={handleSaveAccount} className="modal-form">
-                            <div className="form-field">
-                                <label htmlFor="email">Email</label>
-                                <input
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
                                     id="email"
                                     type="email"
                                     value={formData.email}
@@ -223,12 +261,11 @@ const SuperAdminDashboard: React.FC = () => {
                                     placeholder="user@example.com"
                                     disabled={isSaving}
                                 />
-                                <small>Email for account access</small>
                             </div>
 
-                            <div className="form-field">
-                                <label htmlFor="password">Password</label>
-                                <input
+                            <div className="grid gap-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input
                                     id="password"
                                     type="password"
                                     value={formData.password}
@@ -236,12 +273,12 @@ const SuperAdminDashboard: React.FC = () => {
                                     placeholder="Leave empty to keep current"
                                     disabled={isSaving}
                                 />
-                                <small>Leave empty to keep current password</small>
+                                <p className="text-xs text-muted-foreground">Only enter if you want to change it.</p>
                             </div>
 
-                            <div className="form-field">
-                                <label htmlFor="referenceWebsite">Reference Website</label>
-                                <input
+                            <div className="grid gap-2">
+                                <Label htmlFor="referenceWebsite">Reference Website</Label>
+                                <Input
                                     id="referenceWebsite"
                                     type="url"
                                     value={formData.referenceWebsite}
@@ -249,30 +286,21 @@ const SuperAdminDashboard: React.FC = () => {
                                     placeholder="https://example.com"
                                     disabled={isSaving}
                                 />
-                                <small>Client's website for identification</small>
                             </div>
 
-                            <div className="modal-actions">
-                                <button
-                                    type="button"
-                                    onClick={handleCloseModal}
-                                    className="button-secondary"
-                                    disabled={isSaving}
-                                >
+                            <DialogFooter>
+                                <Button type="button" variant="ghost" onClick={handleCloseModal} disabled={isSaving}>
                                     Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="button-primary"
-                                    disabled={isSaving}
-                                >
-                                    {isSaving ? 'Saving...' : 'Save Changes'}
-                                </button>
-                            </div>
+                                </Button>
+                                <Button type="submit" disabled={isSaving}>
+                                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Save Changes
+                                </Button>
+                            </DialogFooter>
                         </form>
-                    </div>
-                </div>
-            )}
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

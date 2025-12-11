@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import './Login.css';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 const Login: React.FC = () => {
     const navigate = useNavigate();
@@ -39,67 +43,72 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="login-container">
-            <div className="login-card">
-                <div className="login-header">
-                    <h1>Koru Booking</h1>
-                    <p>Backoffice Access</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="login-form">
-                    <div className="form-group">
-                        <label htmlFor="identifier">Website ID / Email</label>
-                        <input
-                            id="identifier"
-                            type="text"
-                            value={identifier}
-                            onChange={(e) => setIdentifier(e.target.value)}
-                            placeholder="Enter your Website ID or Email"
-                            required
-                            disabled={isLoading}
-                            autoComplete="username"
-                        />
-                        <small className="field-hint">
-                            Clients: use Website ID | Administrators: use Email
-                        </small>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="secret">App ID / Password</label>
-                        <input
-                            id="secret"
-                            type="password"
-                            value={secret}
-                            onChange={(e) => setSecret(e.target.value)}
-                            placeholder="Enter your App ID or Password"
-                            required
-                            disabled={isLoading}
-                            autoComplete="current-password"
-                        />
-                        <small className="field-hint">
-                            Clients: use App ID | Administrators: use Password
-                        </small>
-                    </div>
-
-                    {error && (
-                        <div className="error-message">
-                            {error}
+        <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
+            <Card className="w-full max-w-md shadow-lg">
+                <CardHeader className="space-y-1 text-center">
+                    <CardTitle className="text-2xl font-bold">Koru Booking</CardTitle>
+                    <CardDescription>
+                        Enter your credentials to access the backoffice
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="identifier">Website ID / Email</Label>
+                            <Input
+                                id="identifier"
+                                type="text"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                placeholder="name@example.com or Website ID"
+                                required
+                                disabled={isLoading}
+                                autoComplete="username"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Clients: use Website ID | Administrators: use Email
+                            </p>
                         </div>
-                    )}
 
-                    <button
-                        type="submit"
-                        className="login-button"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Logging in...' : 'Login'}
-                    </button>
-                </form>
+                        <div className="space-y-2">
+                            <Label htmlFor="secret">App ID / Password</Label>
+                            <Input
+                                id="secret"
+                                type="password"
+                                value={secret}
+                                onChange={(e) => setSecret(e.target.value)}
+                                placeholder="••••••••"
+                                required
+                                disabled={isLoading}
+                                autoComplete="current-password"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Clients: use App ID | Administrators: use Password
+                            </p>
+                        </div>
 
-                <div className="login-footer">
-                    <p>Enter your credentials to access the backoffice</p>
-                </div>
-            </div>
+                        {error && (
+                            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+                                {error}
+                            </div>
+                        )}
+
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={isLoading}
+                        >
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isLoading ? 'Logging in...' : 'Login'}
+                        </Button>
+                    </form>
+                </CardContent>
+                <CardFooter className="flex justify-center border-t p-4 mt-2">
+                    <p className="text-xs text-muted-foreground">
+                        Protected System. Authorized Access Only.
+                    </p>
+                </CardFooter>
+            </Card>
         </div>
     );
 };

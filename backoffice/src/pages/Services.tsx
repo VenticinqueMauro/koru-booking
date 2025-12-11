@@ -3,8 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { servicesApi } from '../api/services';
 import { Service, CreateServiceInput } from '../types';
 import { Layout } from '../components/Layout';
-import { Button, Card, Input, Badge } from '../components/ui';
-import './Services.css';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2, Plus, Pencil, Trash2, Clock, DollarSign } from 'lucide-react';
 
 export default function Services() {
   const queryClient = useQueryClient();
@@ -44,7 +49,9 @@ export default function Services() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="services-loading">Cargando servicios...</div>
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       </Layout>
     );
   }
@@ -52,27 +59,32 @@ export default function Services() {
   if (error) {
     return (
       <Layout>
-        <div className="services-error">Error al cargar servicios</div>
+        <div className="flex h-[50vh] items-center justify-center text-destructive">
+          Error al cargar servicios
+        </div>
       </Layout>
     );
   }
 
   return (
     <Layout>
-      <div className="services">
-        <header className="services-header">
+      <div className="space-y-6">
+        <header className="flex items-center justify-between">
           <div>
-            <h1 className="page-title">Gestión de Servicios</h1>
-            <p className="page-subtitle">
+            <h1 className="text-3xl font-bold tracking-tight">Gestión de Servicios</h1>
+            <p className="text-muted-foreground mt-2">
               Administra los servicios que ofreces a tus clientes
             </p>
           </div>
           <Button
-            variant={isEditing ? 'outline' : 'primary'}
-            size="md"
+            variant={isEditing ? 'outline' : 'default'}
             onClick={isEditing ? () => setIsEditing(false) : handleCreate}
           >
-            {isEditing ? 'Cancelar' : '+ Nuevo Servicio'}
+            {isEditing ? 'Cancelar' : (
+              <>
+                <Plus className="mr-2 h-4 w-4" /> Nuevo Servicio
+              </>
+            )}
           </Button>
         </header>
 
@@ -86,54 +98,54 @@ export default function Services() {
             }}
           />
         ) : (
-          <div className="services-grid">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {services.length === 0 ? (
-              <Card padding="lg" className="services-empty">
+              <Card className="col-span-full py-12 text-center text-muted-foreground">
                 <p>No hay servicios registrados. Crea tu primer servicio.</p>
               </Card>
             ) : (
               services.map((service) => (
-                <Card key={service.id} padding="lg" className="service-card">
-                  <div className="service-card-header">
-                    <h3 className="service-card-title">{service.name}</h3>
-                    <Badge variant={service.active ? 'success' : 'error'}>
+                <Card key={service.id} className="flex flex-col">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xl font-semibold">
+                      {service.name}
+                    </CardTitle>
+                    <Badge variant={service.active ? 'default' : 'destructive'}>
                       {service.active ? 'Activo' : 'Inactivo'}
                     </Badge>
-                  </div>
-
-                  <div className="service-card-details">
-                    <div className="service-detail">
-                      <span className="service-detail-label">Duración</span>
-                      <span className="service-detail-value">{service.duration} min</span>
+                  </CardHeader>
+                  <CardContent className="flex-1 space-y-3 pt-4">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="mr-2 h-4 w-4" />
+                      <span>{service.duration} min</span>
                     </div>
-                    <div className="service-detail">
-                      <span className="service-detail-label">Precio</span>
-                      <span className="service-detail-value">${service.price || 0}</span>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <DollarSign className="mr-2 h-4 w-4" />
+                      <span>${service.price || 0}</span>
                     </div>
                     {service.buffer > 0 && (
-                      <div className="service-detail">
-                        <span className="service-detail-label">Buffer</span>
-                        <span className="service-detail-value">{service.buffer} min</span>
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <span className="font-medium mr-2">Buffer:</span>
+                        <span>{service.buffer} min</span>
                       </div>
                     )}
-                  </div>
-
-                  <div className="service-card-actions">
+                  </CardContent>
+                  <CardFooter className="flex justify-end gap-2 pt-4 border-t">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(service)}
                     >
-                      Editar
+                      <Pencil className="mr-2 h-3 w-3" /> Editar
                     </Button>
                     <Button
-                      variant="danger"
+                      variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(service.id)}
                     >
-                      Eliminar
+                      <Trash2 className="mr-2 h-3 w-3" /> Eliminar
                     </Button>
-                  </div>
+                  </CardFooter>
                 </Card>
               ))
             )}
@@ -171,83 +183,87 @@ function ServiceForm({ service, onCancel, onSuccess }: { service: Service | null
   };
 
   return (
-    <Card padding="lg" className="service-form">
-      <h2 className="service-form-title">
-        {service ? 'Editar Servicio' : 'Nuevo Servicio'}
-      </h2>
-
-      <form onSubmit={handleSubmit}>
-        <div className="service-form-grid">
-          <Input
-            label="Nombre del servicio"
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-            fullWidth
-            placeholder="Ej: Consulta general"
-          />
-
-          <div className="service-form-row">
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>{service ? 'Editar Servicio' : 'Nuevo Servicio'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre del servicio</Label>
             <Input
-              label="Duración (min)"
-              type="number"
-              value={formData.duration}
-              onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
+              id="name"
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              min="1"
-              fullWidth
+              placeholder="Ej: Consulta general"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="duration">Duración (min)</Label>
+              <Input
+                id="duration"
+                type="number"
+                value={formData.duration}
+                onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
+                required
+                min="1"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="price">Precio ($)</Label>
+              <Input
+                id="price"
+                type="number"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                min="0"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="buffer">Buffer (tiempo entre citas)</Label>
             <Input
-              label="Precio ($)"
+              id="buffer"
               type="number"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-              fullWidth
+              value={formData.buffer}
+              onChange={(e) => setFormData({ ...formData, buffer: Number(e.target.value) })}
               min="0"
             />
+            <p className="text-xs text-muted-foreground">Tiempo de descanso entre servicios en minutos</p>
           </div>
 
-          <Input
-            label="Buffer (tiempo entre citas)"
-            type="number"
-            value={formData.buffer}
-            onChange={(e) => setFormData({ ...formData, buffer: Number(e.target.value) })}
-            fullWidth
-            helperText="Tiempo de descanso entre servicios en minutos"
-            min="0"
-          />
-
-          <div className="service-form-checkbox">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={formData.active}
-                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                className="checkbox-input"
-              />
-              <span>Servicio activo</span>
-            </label>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="active"
+              checked={formData.active}
+              onCheckedChange={(checked) => setFormData({ ...formData, active: checked as boolean })}
+            />
+            <Label htmlFor="active">Servicio activo</Label>
           </div>
-        </div>
 
-        {mutation.error && (
-          <div className="service-form-error">Error al guardar el servicio</div>
-        )}
+          {mutation.error && (
+            <div className="text-sm text-destructive font-medium">Error al guardar el servicio</div>
+          )}
 
-        <div className="service-form-actions">
-          <Button type="button" variant="ghost" onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            isLoading={mutation.isPending}
-          >
-            {mutation.isPending ? 'Guardando...' : 'Guardar Servicio'}
-          </Button>
-        </div>
-      </form>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {mutation.isPending ? 'Guardando...' : 'Guardar Servicio'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
     </Card>
   );
 }

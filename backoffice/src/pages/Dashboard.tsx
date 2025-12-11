@@ -1,44 +1,44 @@
 import { Link } from 'react-router-dom';
 import { Layout } from '../components/Layout';
-import { Card } from '../components/ui';
-import './Dashboard.css';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Wrench, Calendar, ClipboardList, Settings, ArrowRight } from 'lucide-react';
 
 export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="dashboard">
-        <header className="page-header">
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">
+      <div className="space-y-8">
+        <header>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
             Bienvenido al panel de administración de Koru Booking
           </p>
         </header>
 
-        <div className="dashboard-grid">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <DashboardCard
             title="Gestión de Servicios"
             description="Administra los servicios ofrecidos a tus clientes"
             link="/services"
-            icon="🛠️"
+            icon={Wrench}
           />
           <DashboardCard
             title="Configuración de Horarios"
             description="Define tu disponibilidad semanal"
             link="/schedule"
-            icon="📅"
+            icon={Calendar}
           />
           <DashboardCard
             title="Agenda de Reservas"
             description="Visualiza y gestiona todas las citas"
             link="/bookings"
-            icon="📋"
+            icon={ClipboardList}
           />
           <DashboardCard
             title="Ajustes del Widget"
             description="Personaliza el widget de reservas"
             link="/settings"
-            icon="⚙️"
+            icon={Settings}
           />
         </div>
       </div>
@@ -50,17 +50,25 @@ interface DashboardCardProps {
   title: string;
   description: string;
   link: string;
-  icon: string;
+  icon: React.ElementType;
 }
 
-function DashboardCard({ title, description, link, icon }: DashboardCardProps) {
+function DashboardCard({ title, description, link, icon: Icon }: DashboardCardProps) {
   return (
-    <Link to={link} className="dashboard-card-link">
-      <Card hoverable padding="lg" className="dashboard-card">
-        <div className="dashboard-card-icon">{icon}</div>
-        <h3 className="dashboard-card-title">{title}</h3>
-        <p className="dashboard-card-description">{description}</p>
-        <div className="dashboard-card-arrow">→</div>
+    <Link to={link} className="block group">
+      <Card className="h-full transition-all hover:shadow-md hover:border-primary/50 relative overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            {title}
+          </CardTitle>
+          <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </CardContent>
+        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <ArrowRight className="h-4 w-4 text-primary" />
+        </div>
       </Card>
     </Link>
   );
