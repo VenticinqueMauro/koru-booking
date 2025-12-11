@@ -36,18 +36,51 @@ export interface BookingResponse {
   status: string;
 }
 
+export interface KoruCredentials {
+  websiteId: string;
+  appId: string;
+}
+
 export class APIClient {
   private baseURL: string;
+  private credentials: KoruCredentials | null = null;
 
-  constructor(baseURL?: string) {
+  constructor(baseURL?: string, credentials?: KoruCredentials) {
     this.baseURL = baseURL || API_BASE_URL;
+    this.credentials = credentials || null;
+  }
+
+  /**
+   * Set Koru credentials for authentication
+   */
+  setCredentials(credentials: KoruCredentials): void {
+    this.credentials = credentials;
+  }
+
+  /**
+   * Get headers with Koru authentication
+   */
+  private getHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.credentials) {
+      headers['X-Koru-Website-Id'] = this.credentials.websiteId;
+      headers['X-Koru-App-Id'] = this.credentials.appId;
+    }
+
+    return headers;
   }
 
   /**
    * Obtiene todos los servicios activos
    */
   async getServices(): Promise<Service[]> {
-    const response = await fetch(`${this.baseURL}/api/services`);
+    const response = await fetch(`${this.baseURL}/api/services`, {
+      headers: this.getHeaders(),
+    });
+
     if (!response.ok) {
       throw new Error('Error al cargar servicios');
     }
@@ -59,8 +92,12 @@ export class APIClient {
    */
   async getSlots(serviceId: string, date: string): Promise<string[]> {
     const response = await fetch(
-      `${this.baseURL}/api/slots?serviceId=${serviceId}&date=${date}`
+      `${this.baseURL}/api/slots?serviceId=${serviceId}&date=${date}`,
+      {
+        headers: this.getHeaders(),
+      }
     );
+
     if (!response.ok) {
       throw new Error('Error al cargar disponibilidad');
     }
@@ -74,9 +111,7 @@ export class APIClient {
   async createBooking(booking: BookingRequest): Promise<BookingResponse> {
     const response = await fetch(`${this.baseURL}/api/bookings`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: this.getHeaders(),
       body: JSON.stringify(booking),
     });
 
@@ -92,8 +127,8 @@ export class APIClient {
 /**
  * Factory function para crear instancias de APIClient
  */
-export const createApiClient = (baseURL?: string): APIClient => {
-  return new APIClient(baseURL);
+export const createApiClient = (baseURL?: string, credentials?: KoruCredentials): APIClient => {
+  return new APIClient(baseURL, credentials);
 };
 
 // Exportar instancia por defecto para compatibilidad

@@ -48,6 +48,30 @@ export class BookingWidget extends KoruWidget {
     this.log('BookingWidget constructor called');
   }
 
+
+  /**
+   * Get Koru credentials from script tag data attributes
+   */
+  private getCredentialsFromScriptTag(): { websiteId: string; appId: string } | null {
+    const scripts = document.querySelectorAll('script[data-website-id][data-app-id]');
+
+    if (scripts.length === 0) {
+      console.warn('No script tag found with data-website-id and data-app-id attributes');
+      return null;
+    }
+
+    const script = scripts[0] as HTMLScriptElement;
+    const websiteId = script.getAttribute('data-website-id');
+    const appId = script.getAttribute('data-app-id');
+
+    if (!websiteId || !appId) {
+      console.warn('Script tag missing required attributes');
+      return null;
+    }
+
+    return { websiteId, appId };
+  }
+
   /**
    * Override start to bypass Koru SDK authentication in development
    */
@@ -55,6 +79,24 @@ export class BookingWidget extends KoruWidget {
     console.log('🚀 BookingWidget.start() called');
     const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     console.log('isDev:', isDev);
+
+    // Get credentials from script tag
+    const credentials = this.getCredentialsFromScriptTag();
+
+    if (!credentials && !isDev) {
+      console.error('❌ Koru credentials not found in script tag');
+      throw new Error('Koru credentials are required. Add data-website-id and data-app-id to your script tag.');
+    }
+
+    // Initialize API client with credentials
+    if (credentials) {
+      this.log('🔑 Koru credentials loaded:', { websiteId: credentials.websiteId });
+      this.apiClient = createApiClient(undefined, credentials);
+    } else {
+      // Development mode without credentials
+      this.log('⚠️ Development mode: No credentials provided');
+      this.apiClient = createApiClient();
+    }
 
     if (isDev) {
       this.log('🚀 Development mode detected: Bypassing Koru SDK auth');
