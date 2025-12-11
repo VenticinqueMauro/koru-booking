@@ -6,11 +6,13 @@ Sistema completo de gestión de citas y reservas en tiempo real para el ecosiste
 
 ```
 koru-booking/
-├── widget/          # Widget embebible (Vanilla JS + Koru SDK)
 ├── backend/         # API REST (Node.js + Express + Prisma + Supabase)
-├── backoffice/      # Panel Admin (React + Koru React SDK)
-├── README.md
-└── ARCHITECTURE.md
+├── backoffice/      # Panel Admin (React SPA)
+├── widget/          # Widget embebible (Vanilla TypeScript)
+├── dist/            # Build consolidado para deployment
+├── scripts/         # Scripts de build y deployment
+├── README.md        # Documentación principal
+└── CLAUDE.md        # Instrucciones para Claude Code
 ```
 
 ## 🚀 Inicio Rápido
@@ -135,6 +137,46 @@ Reservas de clientes
 - Unique constraint: `(serviceId, date, time)` previene duplicados
 - status: confirmed / cancelled / completed
 
+## 🚀 Deployment
+
+### Build Local
+
+Construir todos los componentes:
+```bash
+npm run build:all
+```
+
+Este comando ejecuta:
+1. `build:backoffice` - Construye el panel admin
+2. `build:widget` - Construye el widget embebible
+3. `copy:dist` - Consolida ambos builds en `/dist/`
+
+### Estructura del Build
+
+```
+dist/
+├── index.html           # Backoffice (raíz del sitio)
+├── assets/              # Assets del backoffice
+└── widget/              # Widget embebible
+    ├── index.html       # Demo del widget
+    └── koru-booking-widget.*
+```
+
+### Deploy a GitHub Pages
+
+```bash
+npm run deploy
+```
+
+Este comando:
+1. Ejecuta `build:all`
+2. Despliega la carpeta `/dist/` a la rama `gh-pages`
+
+### URLs de Producción
+
+- **Backoffice**: https://venticinquemauro.github.io/koru-booking/
+- **Widget Demo**: https://venticinquemauro.github.io/koru-booking/widget/
+
 ## 🧪 Testing QA
 
 - [ ] **Test de Conflicto**: Dos usuarios intentan reservar el mismo slot
@@ -152,8 +194,6 @@ Reservas de clientes
 - ✅ Autenticación Koru en backoffice
 
 ## 📚 Documentación
-
-Ver [ARCHITECTURE.md](./ARCHITECTURE.md) para detalles técnicos de arquitectura.
 
 Cada subdirectorio tiene su propio README con instrucciones específicas:
 - [Widget README](./widget/README.md)
