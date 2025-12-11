@@ -178,6 +178,47 @@ Both widget and backoffice use centralized API clients:
 4. **Transaction usage** - Always use Prisma transactions when checking availability + creating bookings
 5. **Production API URL** - Backend deployed on Render: https://koru-booking.onrender.com/api
 
+## Repository Cleanliness Policy
+
+**IMPORTANT**: Keep the repository clean and minimal. Follow these guidelines:
+
+### ❌ DO NOT Create:
+- **Analysis documents** (ANALYSIS.md, AUDIT.md, REVIEW.md, etc.)
+- **Redundant documentation** - Information should only exist in one place
+- **Temporary testing files** (debug.html, test.html, scratch.js, etc.)
+- **Migration guides** for completed migrations
+- **Summary documents** (SUMMARY.md, CHANGELOG.md unless actively maintained)
+- **Architecture documents** that duplicate README/CLAUDE.md content
+- **Multiple .md files** covering the same topic
+- **Specification files** (spec.md, requirements.md) after implementation is complete
+
+### ✅ Allowed Documentation:
+Each folder should have **maximum 1-2 essential .md files**:
+
+**Root:**
+- `README.md` - Main project documentation
+- `CLAUDE.md` - Instructions for Claude Code (this file)
+
+**Backend:**
+- `README.md` - Backend-specific documentation
+- `SETUP_SUPABASE.md` - Production setup guide (technical reference)
+- `MIGRATION_CHECKLIST.md` - Production migration guide (technical reference)
+
+**Backoffice/Widget:**
+- `README.md` only
+
+### 🗂️ File Organization:
+- Keep source code in `src/` directories
+- Build outputs go to `dist/` (git-ignored)
+- Configuration files in root of each component
+- No loose files in root unless essential
+
+### 🧹 Before Committing:
+1. Remove any temporary/debug files
+2. Consolidate redundant documentation
+3. Update existing docs instead of creating new ones
+4. Verify .gitignore excludes build artifacts and temp files
+
 ## Common Development Workflows
 
 ### Adding a New Service Field
