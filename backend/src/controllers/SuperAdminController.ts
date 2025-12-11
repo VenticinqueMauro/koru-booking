@@ -71,6 +71,27 @@ export class SuperAdminController {
             res.status(500).json({ error: 'Error fetching bookings' });
         }
     }
+
+    /**
+     * Update account credentials and reference website
+     */
+    async updateAccount(req: SuperAdminRequest, res: Response): Promise<void> {
+        try {
+            const { accountId } = req.params;
+            const { email, password, referenceWebsite } = req.body;
+
+            const updatedAccount = await superAdminService.updateAccount(accountId, {
+                email,
+                password,
+                referenceWebsite,
+            });
+
+            res.json(updatedAccount);
+        } catch (error) {
+            console.error('Error updating account:', error);
+            res.status(500).json({ error: 'Error updating account' });
+        }
+    }
 }
 
 export const superAdminController = new SuperAdminController();

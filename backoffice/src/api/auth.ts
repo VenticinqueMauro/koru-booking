@@ -33,6 +33,12 @@ export const superAdminApi = {
         return response;
     },
 
+    // Update account credentials and reference website
+    updateAccount: async (accountId: string, data: { email?: string; password?: string; referenceWebsite?: string }) => {
+        const response = await apiClient.put(`/super-admin/accounts/${accountId}`, data);
+        return response;
+    },
+
     // Get services for a specific account
     getAccountServices: async (accountId: string) => {
         const response = await apiClient.get(`/super-admin/accounts/${accountId}/services`);

@@ -134,6 +134,33 @@ export class SuperAdminService {
             recentBookings,
         };
     }
+
+    /**
+     * Update account credentials and reference website
+     */
+    async updateAccount(
+        accountId: string,
+        data: { email?: string; password?: string; referenceWebsite?: string }
+    ) {
+        const updateData: any = {};
+
+        if (data.email !== undefined) {
+            updateData.email = data.email || null;
+        }
+
+        if (data.password && data.password.trim() !== '') {
+            updateData.passwordHash = await bcrypt.hash(data.password, 10);
+        }
+
+        if (data.referenceWebsite !== undefined) {
+            updateData.referenceWebsite = data.referenceWebsite || null;
+        }
+
+        return prisma.account.update({
+            where: { id: accountId },
+            data: updateData,
+        });
+    }
 }
 
 export const superAdminService = new SuperAdminService();

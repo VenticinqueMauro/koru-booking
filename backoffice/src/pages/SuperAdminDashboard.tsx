@@ -8,28 +8,31 @@ interface Account {
     websiteId: string;
     appId: string;
     businessName: string | null;
+    email: string | null;
+    password: string | null;
+    referenceWebsite: string | null;
     active: boolean;
     createdAt: string;
-    _count?: {
-        services: number;
-        bookings: number;
-    };
 }
 
-interface GlobalStats {
-    totalAccounts: number;
-    activeAccounts: number;
-    totalServices: number;
-    totalBookings: number;
-    bookingsThisMonth: number;
+interface AccountFormData {
+    email: string;
+    password: string;
+    referenceWebsite: string;
 }
 
 const SuperAdminDashboard: React.FC = () => {
     const { logout } = useAuth();
     const [accounts, setAccounts] = useState<Account[]>([]);
-    const [stats, setStats] = useState<GlobalStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+    const [formData, setFormData] = useState<AccountFormData>({
+        email: '',
+        password: '',
+        referenceWebsite: '',
+    });
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -38,16 +41,43 @@ const SuperAdminDashboard: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [accountsData, statsData] = await Promise.all([
-                superAdminApi.getAllAccounts(),
-                superAdminApi.getGlobalStats(),
-            ]);
+            const accountsData = await superAdminApi.getAllAccounts();
             setAccounts(accountsData as any);
-            setStats(statsData as any);
         } catch (err: any) {
             setError(err.message || 'Error loading data');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleEditAccount = (account: Account) => {
+        setEditingAccount(account);
+        setFormData({
+            email: account.email || '',
+            password: '',
+            referenceWebsite: account.referenceWebsite || '',
+        });
+    };
+
+    const handleCloseModal = () => {
+        setEditingAccount(null);
+        setFormData({ email: '', password: '', referenceWebsite: '' });
+        setIsSaving(false);
+    };
+
+    const handleSaveAccount = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingAccount) return;
+
+        setIsSaving(true);
+        try {
+            await superAdminApi.updateAccount(editingAccount.id, formData);
+            await loadData();
+            handleCloseModal();
+        } catch (err: any) {
+            alert(err.message || 'Error updating account');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -72,43 +102,33 @@ const SuperAdminDashboard: React.FC = () => {
             <header className="super-admin-header">
                 <div>
                     <h1>Super Admin Dashboard</h1>
-                    <p>Manage all client accounts</p>
+                    <p>User Account Management</p>
                 </div>
                 <button onClick={logout} className="logout-button">
                     Logout
                 </button>
             </header>
 
-            {/* Global Stats */}
-            {stats && (
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-value">{stats.totalAccounts}</div>
-                        <div className="stat-label">Total Accounts</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-value">{stats.activeAccounts}</div>
-                        <div className="stat-label">Active Accounts</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-value">{stats.totalServices}</div>
-                        <div className="stat-label">Total Services</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-value">{stats.totalBookings}</div>
-                        <div className="stat-label">Total Bookings</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-value">{stats.bookingsThisMonth}</div>
-                        <div className="stat-label">Bookings This Month</div>
-                    </div>
+            {/* Summary Stats */}
+            <div className="stats-summary">
+                <div className="stat-item">
+                    <span className="stat-number">{accounts.length}</span>
+                    <span className="stat-text">Total Accounts</span>
                 </div>
-            )}
+                <div className="stat-item">
+                    <span className="stat-number">{accounts.filter(a => a.active).length}</span>
+                    <span className="stat-text">Active</span>
+                </div>
+                <div className="stat-item">
+                    <span className="stat-number">{accounts.filter(a => a.email).length}</span>
+                    <span className="stat-text">With Credentials</span>
+                </div>
+            </div>
 
             {/* Accounts Table */}
             <div className="accounts-section">
                 <div className="section-header">
-                    <h2>Client Accounts</h2>
+                    <h2>Registered Users</h2>
                     <button className="refresh-button" onClick={loadData}>
                         Refresh
                     </button>
@@ -121,8 +141,8 @@ const SuperAdminDashboard: React.FC = () => {
                                 <th>Business Name</th>
                                 <th>Website ID</th>
                                 <th>App ID</th>
-                                <th>Services</th>
-                                <th>Bookings</th>
+                                <th>Email</th>
+                                <th>Reference Website</th>
                                 <th>Status</th>
                                 <th>Created</th>
                                 <th>Actions</th>
@@ -140,8 +160,22 @@ const SuperAdminDashboard: React.FC = () => {
                                     <td>
                                         <code className="code-text">{account.appId}</code>
                                     </td>
-                                    <td>{account._count?.services || 0}</td>
-                                    <td>{account._count?.bookings || 0}</td>
+                                    <td>
+                                        {account.email ? (
+                                            <span className="email-text">{account.email}</span>
+                                        ) : (
+                                            <span className="not-set">Not set</span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        {account.referenceWebsite ? (
+                                            <a href={account.referenceWebsite} target="_blank" rel="noopener noreferrer" className="website-link">
+                                                {account.referenceWebsite}
+                                            </a>
+                                        ) : (
+                                            <span className="not-set">Not set</span>
+                                        )}
+                                    </td>
                                     <td>
                                         <span className={`status-badge ${account.active ? 'active' : 'inactive'}`}>
                                             {account.active ? 'Active' : 'Inactive'}
@@ -150,10 +184,10 @@ const SuperAdminDashboard: React.FC = () => {
                                     <td>{new Date(account.createdAt).toLocaleDateString()}</td>
                                     <td>
                                         <button
-                                            className="view-button"
-                                            onClick={() => alert(`View details for ${account.businessName || account.websiteId}`)}
+                                            className="edit-button"
+                                            onClick={() => handleEditAccount(account)}
                                         >
-                                            View
+                                            Edit
                                         </button>
                                     </td>
                                 </tr>
@@ -162,6 +196,83 @@ const SuperAdminDashboard: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Edit Account Modal */}
+            {editingAccount && (
+                <div className="modal-overlay" onClick={handleCloseModal}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Edit Account</h3>
+                            <button className="modal-close" onClick={handleCloseModal}>×</button>
+                        </div>
+
+                        <div className="account-info">
+                            <p><strong>Business:</strong> {editingAccount.businessName || 'N/A'}</p>
+                            <p><strong>Website ID:</strong> <code>{editingAccount.websiteId}</code></p>
+                            <p><strong>App ID:</strong> <code>{editingAccount.appId}</code></p>
+                        </div>
+
+                        <form onSubmit={handleSaveAccount} className="modal-form">
+                            <div className="form-field">
+                                <label htmlFor="email">Email</label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    placeholder="user@example.com"
+                                    disabled={isSaving}
+                                />
+                                <small>Email for account access</small>
+                            </div>
+
+                            <div className="form-field">
+                                <label htmlFor="password">Password</label>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder="Leave empty to keep current"
+                                    disabled={isSaving}
+                                />
+                                <small>Leave empty to keep current password</small>
+                            </div>
+
+                            <div className="form-field">
+                                <label htmlFor="referenceWebsite">Reference Website</label>
+                                <input
+                                    id="referenceWebsite"
+                                    type="url"
+                                    value={formData.referenceWebsite}
+                                    onChange={(e) => setFormData({ ...formData, referenceWebsite: e.target.value })}
+                                    placeholder="https://example.com"
+                                    disabled={isSaving}
+                                />
+                                <small>Client's website for identification</small>
+                            </div>
+
+                            <div className="modal-actions">
+                                <button
+                                    type="button"
+                                    onClick={handleCloseModal}
+                                    className="button-secondary"
+                                    disabled={isSaving}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="button-primary"
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

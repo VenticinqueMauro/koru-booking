@@ -3,22 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Login.css';
 
-type LoginMode = 'koru' | 'admin';
-
 const Login: React.FC = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
-    const [mode, setMode] = useState<LoginMode>('koru');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Koru credentials
-    const [websiteId, setWebsiteId] = useState('');
-    const [appId, setAppId] = useState('');
-
-    // Admin credentials
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    // Unified credentials - can be either websiteId/email and appId/password
+    const [identifier, setIdentifier] = useState('');
+    const [secret, setSecret] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,12 +19,18 @@ const Login: React.FC = () => {
         setIsLoading(true);
 
         try {
-            if (mode === 'koru') {
-                await login({ websiteId, appId });
+            // Determine if identifier is email or websiteId
+            const isEmail = identifier.includes('@');
+
+            if (isEmail) {
+                // Super admin login
+                await login({ email: identifier, password: secret });
+                navigate('/admin');
             } else {
-                await login({ email, password });
+                // Koru client login
+                await login({ websiteId: identifier, appId: secret });
+                navigate('/dashboard');
             }
-            navigate('/dashboard');
         } catch (err: any) {
             setError(err.message || 'Login failed');
         } finally {
@@ -44,84 +43,43 @@ const Login: React.FC = () => {
             <div className="login-card">
                 <div className="login-header">
                     <h1>Koru Booking</h1>
-                    <p>Backoffice Login</p>
-                </div>
-
-                <div className="login-mode-toggle">
-                    <button
-                        className={mode === 'koru' ? 'active' : ''}
-                        onClick={() => setMode('koru')}
-                        type="button"
-                    >
-                        Client Login
-                    </button>
-                    <button
-                        className={mode === 'admin' ? 'active' : ''}
-                        onClick={() => setMode('admin')}
-                        type="button"
-                    >
-                        Super Admin
-                    </button>
+                    <p>Backoffice Access</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="login-form">
-                    {mode === 'koru' ? (
-                        <>
-                            <div className="form-group">
-                                <label htmlFor="websiteId">Website ID</label>
-                                <input
-                                    id="websiteId"
-                                    type="text"
-                                    value={websiteId}
-                                    onChange={(e) => setWebsiteId(e.target.value)}
-                                    placeholder="Enter your Koru website ID"
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
+                    <div className="form-group">
+                        <label htmlFor="identifier">Website ID / Email</label>
+                        <input
+                            id="identifier"
+                            type="text"
+                            value={identifier}
+                            onChange={(e) => setIdentifier(e.target.value)}
+                            placeholder="Enter your Website ID or Email"
+                            required
+                            disabled={isLoading}
+                            autoComplete="username"
+                        />
+                        <small className="field-hint">
+                            Clients: use Website ID | Administrators: use Email
+                        </small>
+                    </div>
 
-                            <div className="form-group">
-                                <label htmlFor="appId">App ID</label>
-                                <input
-                                    id="appId"
-                                    type="text"
-                                    value={appId}
-                                    onChange={(e) => setAppId(e.target.value)}
-                                    placeholder="Enter your Koru app ID"
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="form-group">
-                                <label htmlFor="email">Email</label>
-                                <input
-                                    id="email"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="admin@example.com"
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label htmlFor="password">Password</label>
-                                <input
-                                    id="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter your password"
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </div>
-                        </>
-                    )}
+                    <div className="form-group">
+                        <label htmlFor="secret">App ID / Password</label>
+                        <input
+                            id="secret"
+                            type="password"
+                            value={secret}
+                            onChange={(e) => setSecret(e.target.value)}
+                            placeholder="Enter your App ID or Password"
+                            required
+                            disabled={isLoading}
+                            autoComplete="current-password"
+                        />
+                        <small className="field-hint">
+                            Clients: use App ID | Administrators: use Password
+                        </small>
+                    </div>
 
                     {error && (
                         <div className="error-message">
@@ -138,11 +96,9 @@ const Login: React.FC = () => {
                     </button>
                 </form>
 
-                {mode === 'koru' && (
-                    <div className="login-footer">
-                        <p>Don't have credentials? Contact your Koru Suite administrator.</p>
-                    </div>
-                )}
+                <div className="login-footer">
+                    <p>Enter your credentials to access the backoffice</p>
+                </div>
             </div>
         </div>
     );

@@ -13,6 +13,9 @@ router.get('/accounts', (req, res) => superAdminController.getAllAccounts(req, r
 // GET /api/super-admin/stats - Get global statistics
 router.get('/stats', (req, res) => superAdminController.getGlobalStats(req, res));
 
+// PUT /api/super-admin/accounts/:accountId - Update account credentials
+router.put('/accounts/:accountId', (req, res) => superAdminController.updateAccount(req, res));
+
 // GET /api/super-admin/accounts/:accountId/services - Get services for specific account
 router.get('/accounts/:accountId/services', (req, res) => superAdminController.getAccountServices(req, res));
 

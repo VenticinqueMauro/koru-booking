@@ -14,23 +14,27 @@ datasource db {
 // ============================================
 
 model Account {
-  id           String   @id @default(uuid())
-  websiteId    String   @unique  // Koru website_id
-  appId        String              // Koru app_id
-  businessName String?            // Optional business name from Koru
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  id               String   @id @default(uuid())
+  websiteId        String   @unique  // Koru website_id
+  appId            String              // Koru app_id
+  businessName     String?            // Optional business name from Koru
+  email            String?            // Optional email for account access
+  passwordHash     String?            // Optional hashed password
+  referenceWebsite String?            // Reference website for identification
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
   // Relations
   services  Service[]
   bookings  Booking[]
   schedules Schedule[]
   settings  WidgetSettings?
-  
+
   @@unique([websiteId, appId])
   @@index([websiteId])
   @@index([active])
+  @@index([email])
 }
 
 model User {
