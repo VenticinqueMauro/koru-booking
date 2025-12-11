@@ -7,9 +7,28 @@ export const apiClient = axios.create({
     },
 });
 
+// Request interceptor to add auth token
+apiClient.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
+
+// Response interceptor
 apiClient.interceptors.response.use(
     (response: AxiosResponse) => response.data,
     (error: any) => {
+        // Handle 401 Unauthorized
+        if (error.response?.status === 401) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_state');
+            window.location.href = '/koru-booking/login';
+        }
         return Promise.reject(error);
     }
 );
