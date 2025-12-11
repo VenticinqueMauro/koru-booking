@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import './Layout.css';
 
 interface LayoutProps {
@@ -16,6 +17,7 @@ const navigationItems = [
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const { account, logout } = useAuth();
 
   return (
     <div className="layout">
@@ -44,10 +46,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="sidebar-footer">
           <div className="sidebar-footer-content">
             <div className="sidebar-footer-text">
-              <div className="sidebar-footer-name">Admin User</div>
-              <div className="sidebar-footer-email">admin@koru.com</div>
+              <div className="sidebar-footer-name">
+                {account?.businessName || 'Client Account'}
+              </div>
+              <div className="sidebar-footer-email">
+                {account?.websiteId ? `ID: ${account.websiteId.slice(0, 8)}...` : 'N/A'}
+              </div>
             </div>
           </div>
+          <button onClick={logout} className="logout-button-sidebar">
+            Logout
+          </button>
         </div>
       </aside>
 
