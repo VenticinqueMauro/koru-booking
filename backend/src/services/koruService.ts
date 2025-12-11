@@ -17,11 +17,28 @@ export interface KoruAuthorizeResponse {
     };
 }
 
+export interface KoruLoginResponse {
+    token: string;
+}
+
+export interface KoruLoginCredentials {
+    username: string;
+    password: string;
+}
+
 export class KoruService {
     private koruApiUrl: string;
+    private koruAppId: string;
+    private koruAppSecret: string;
 
     constructor() {
         this.koruApiUrl = process.env.KORU_API_URL || 'https://www.korusuite.com';
+        this.koruAppId = process.env.KORU_APP_ID || '';
+        this.koruAppSecret = process.env.KORU_APP_SECRET || '';
+
+        if (!this.koruAppId || !this.koruAppSecret) {
+            console.warn('⚠️  KORU_APP_ID or KORU_APP_SECRET not set. User login will not work.');
+        }
     }
 
     /**
@@ -63,11 +80,77 @@ export class KoruService {
     }
 
     /**
+     * Login user with Koru credentials (username/password)
+     * Uses the /api/auth/login endpoint (Identity Broker)
+     */
+    async loginUser(credentials: KoruLoginCredentials): Promise<KoruLoginResponse | null> {
+        try {
+            const response = await axios.post<KoruLoginResponse>(
+                `${this.koruApiUrl}/api/auth/login`,
+                {
+                    username: credentials.username,
+                    password: credentials.password,
+                },
+                {
+                    headers: {
+                        'X-App-ID': this.koruAppId,
+                        'X-App-Secret': this.koruAppSecret,
+                        'Content-Type': 'application/json',
+                    },
+                    timeout: 10000, // 10 second timeout
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response?.status === 401) {
+                    console.error('Koru login failed: Invalid username or password');
+                } else if (error.response?.status === 403) {
+                    console.error('Koru login failed: App not authorized or inactive');
+                } else if (error.response?.status === 400) {
+                    console.error('Koru login failed: Missing required parameters');
+                } else {
+                    console.error('Koru API error:', error.message);
+                }
+            } else {
+                console.error('Koru login error:', error);
+            }
+            return null;
+        }
+    }
+
+    /**
      * Development mode: bypass Koru API for testing
      */
     async verifyCredentialsDev(credentials: KoruCredentials): Promise<boolean> {
         // In development, accept any non-empty credentials
         return !!(credentials.websiteId && credentials.appId);
+    }
+
+    /**
+     * Development mode: mock login for testing
+     */
+    async loginUserDev(credentials: KoruLoginCredentials): Promise<KoruLoginResponse | null> {
+        // In development, accept any non-empty credentials and return mock token
+        if (credentials.username && credentials.password) {
+            // Create a mock JWT with user info for testing
+            const mockPayload = {
+                sub: 'dev-user-id',
+                username: credentials.username,
+                email: `${credentials.username}@dev.test`,
+                websiteId: 'dev-website-id',
+                appId: 'dev-app-id',
+                iat: Math.floor(Date.now() / 1000),
+                exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour
+            };
+
+            // Base64 encode (not a real JWT signature, just for dev)
+            const mockToken = 'dev.' + Buffer.from(JSON.stringify(mockPayload)).toString('base64') + '.mock';
+
+            return { token: mockToken };
+        }
+        return null;
     }
 }
 

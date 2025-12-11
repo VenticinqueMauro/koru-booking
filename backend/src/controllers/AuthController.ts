@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { authService } from '../services/authService.js';
 import { superAdminService } from '../services/superAdminService.js';
+import { koruService } from '../services/koruService.js';
+import { userSyncService } from '../services/userSyncService.js';
+import jwt from 'jsonwebtoken';
 
 export class AuthController {
     /**
@@ -37,6 +40,81 @@ export class AuthController {
             }
         } catch (error) {
             console.error('Login error:', error);
+            res.status(401).json({
+                success: false,
+                error: error instanceof Error ? error.message : 'Authentication failed'
+            });
+        }
+    }
+
+    /**
+     * Koru user login with username/password (Identity Broker)
+     * Uses Koru's /api/auth/login endpoint
+     */
+    async koruLogin(req: Request, res: Response): Promise<void> {
+        try {
+            const { username, password } = req.body;
+
+            if (!username || !password) {
+                res.status(400).json({
+                    success: false,
+                    error: 'Username and password are required'
+                });
+                return;
+            }
+
+            // Authenticate with Koru API
+            const koruResponse = await koruService.loginUser({ username, password });
+
+            if (!koruResponse || !koruResponse.token) {
+                res.status(401).json({
+                    success: false,
+                    error: 'Invalid username or password'
+                });
+                return;
+            }
+
+            // Sync user to local database
+            const syncedUser = await userSyncService.syncKoruUser(koruResponse.token);
+
+            if (!syncedUser) {
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to sync user. Please contact support.'
+                });
+                return;
+            }
+
+            // Generate our own JWT with user and account info
+            const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+            const token = jwt.sign(
+                {
+                    userId: syncedUser.user.id,
+                    accountId: syncedUser.account?.id,
+                    websiteId: syncedUser.account?.websiteId,
+                    role: syncedUser.user.role,
+                    koruUserId: syncedUser.user.koruUserId,
+                    koruToken: koruResponse.token, // Store Koru token for future validations
+                },
+                jwtSecret,
+                { expiresIn: '24h' }
+            );
+
+            res.json({
+                success: true,
+                token,
+                user: {
+                    id: syncedUser.user.id,
+                    email: syncedUser.user.email,
+                    username: syncedUser.user.username,
+                    name: syncedUser.user.name,
+                    role: syncedUser.user.role,
+                },
+                account: syncedUser.account,
+                isSuperAdmin: false,
+            });
+        } catch (error) {
+            console.error('Koru login error:', error);
             res.status(401).json({
                 success: false,
                 error: error instanceof Error ? error.message : 'Authentication failed'
