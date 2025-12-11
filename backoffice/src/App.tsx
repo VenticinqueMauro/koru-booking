@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -8,6 +8,7 @@ import Services from './pages/Services';
 import Schedule from './pages/Schedule';
 import Bookings from './pages/Bookings';
 import Settings from './pages/Settings';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,6 +19,17 @@ const queryClient = new QueryClient({
   },
 });
 
+// Component to handle root redirect based on user role
+const RootRedirect = () => {
+  const { isSuperAdmin, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  return <Navigate to={isSuperAdmin ? "/admin" : "/dashboard"} replace />;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -25,7 +37,19 @@ function App() {
         <BrowserRouter basename="/koru-booking">
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<RootRedirect />} />
+
+            {/* Super Admin Route */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requireSuperAdmin>
+                  <SuperAdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Regular Client Routes */}
             <Route
               path="/dashboard"
               element={
