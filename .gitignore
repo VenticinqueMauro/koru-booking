@@ -11,8 +11,9 @@ node_modules/
 # Build outputs
 build/
 .next/
-**/dist/
 **/build/
+dist/
+**/dist/
 
 # Logs
 *.log
