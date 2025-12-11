@@ -46,36 +46,57 @@ try {
     // Save current directory
     const originalCwd = process.cwd();
 
-    // Change to deploy directory for all git operations
-    process.chdir(deployPath);
-
     // Step 3: Initialize new git repo in deploy
     console.log('📁 Initializing git...');
-    execSync('git init', { stdio: 'inherit' });
+    // Use quotes around path to handle spaces and allow safe directory
+    const gitCmd = (cmd) => `git -c safe.directory=* -C "${deployPath}" ${cmd}`;
+
+    execSync(gitCmd('init'), { stdio: 'inherit' });
+
+    // DIAGNOSTICS (Commented out to reduce noise if it works)
+    /*
+    console.log('🔍 Diagnostics:');
+    try {
+        console.log('Contents of deploy path:', fs.readdirSync(deployPath));
+        const gitPath = path.join(deployPath, '.git');
+        if (fs.existsSync(gitPath)) {
+            console.log('Contents of .git:', fs.readdirSync(gitPath));
+        } else {
+            console.log('❌ .git folder missing!');
+        }
+
+        // Try git status
+        console.log('Running git status...');
+        execSync(gitCmd('status'), { stdio: 'inherit' });
+    } catch (e) {
+        console.log('Diagnostics failed:', e.message);
+    }
+    */
+    // END DIAGNOSTICS
 
     // Step 4: Configure git user
     console.log('👤 Configuring git user...');
-    execSync('git config user.name "Venticinque Mauro"', { stdio: 'pipe' });
-    execSync('git config user.email "102001296+VenticinqueMauro@users.noreply.github.com"', { stdio: 'pipe' });
+    execSync(gitCmd('config user.name "Venticinque Mauro"'), { stdio: 'pipe' });
+    execSync(gitCmd('config user.email "102001296+VenticinqueMauro@users.noreply.github.com"'), { stdio: 'pipe' });
 
     // Step 5: Add all files
     console.log('📝 Adding files...');
-    execSync('git add -A', { stdio: 'inherit' });
+    execSync(gitCmd('add -A'), { stdio: 'inherit' });
 
     // Step 6: Commit
     console.log('💾 Creating commit...');
-    execSync('git commit -m "Deploy to gh-pages"', { stdio: 'inherit' });
+    execSync(gitCmd('commit -m "Deploy to gh-pages"'), { stdio: 'inherit' });
 
     // Step 7: Add remote
     console.log('🔗 Adding remote...');
-    execSync('git remote add origin https://github.com/VenticinqueMauro/koru-booking.git', { stdio: 'pipe' });
+    execSync(gitCmd('remote add origin https://github.com/VenticinqueMauro/koru-booking.git'), { stdio: 'pipe' });
 
     // Step 8: Force push to gh-pages branch
     console.log('🚢 Pushing to gh-pages...');
-    execSync('git push origin master:gh-pages --force', { stdio: 'inherit' });
+    execSync(gitCmd('push origin master:gh-pages --force'), { stdio: 'inherit' });
 
-    // Restore original directory
-    process.chdir(originalCwd);
+    // process.chdir(originalCwd); // No longer needed as we didn't change cwd
+
 
     console.log('\n✅ Deployment successful!');
     console.log('🌐 Your site will be available at: https://venticinquemauro.github.io/koru-booking/');
