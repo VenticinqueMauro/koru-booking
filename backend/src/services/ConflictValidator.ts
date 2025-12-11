@@ -8,6 +8,7 @@ export class ConflictValidator {
    * Usa transacciones para evitar race conditions
    */
   async validateAndCreateBooking(
+    accountId: string,
     serviceId: string,
     dateString: string,
     time: string,
@@ -19,9 +20,12 @@ export class ConflictValidator {
     }
   ): Promise<any> {
     return withTransaction(async (tx) => {
-      // 1. Obtener el servicio con lock
-      const service = await tx.service.findUnique({
-        where: { id: serviceId },
+      // 1. Obtener el servicio con lock (scoped by account)
+      const service = await tx.service.findFirst({
+        where: {
+          id: serviceId,
+          accountId: accountId,
+        },
       });
 
       if (!service || !service.active) {
@@ -30,14 +34,13 @@ export class ConflictValidator {
 
       const date = parseISO(dateString);
 
-      // 2. Verificar si ya existe una reserva en ese slot (con lock)
-      const existingBooking = await tx.booking.findUnique({
+      // 2. Verificar si ya existe una reserva en ese slot (con lock, scoped by account)
+      const existingBooking = await tx.booking.findFirst({
         where: {
-          serviceId_date_time: {
-            serviceId,
-            date,
-            time,
-          },
+          accountId: accountId,
+          serviceId,
+          date,
+          time,
         },
       });
 
@@ -48,6 +51,7 @@ export class ConflictValidator {
       // 3. Verificar conflictos con otras reservas (considerando duración + buffer)
       const hasConflict = await this.checkTimeConflicts(
         tx,
+        accountId,
         serviceId,
         date,
         time,
@@ -62,6 +66,7 @@ export class ConflictValidator {
       // 4. Crear la reserva
       const booking = await tx.booking.create({
         data: {
+          accountId,
           serviceId,
           date,
           time,
@@ -98,15 +103,17 @@ export class ConflictValidator {
    */
   private async checkTimeConflicts(
     tx: PrismaClient,
+    accountId: string,
     serviceId: string,
     date: Date,
     time: string,
     duration: number,
     buffer: number
   ): Promise<boolean> {
-    // Obtener todas las reservas del día
+    // Obtener todas las reservas del día (scoped by account)
     const dayBookings = await tx.booking.findMany({
       where: {
+        accountId: accountId,
         date,
         status: { not: 'cancelled' },
       },

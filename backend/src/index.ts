@@ -5,6 +5,8 @@ import { corsMiddleware } from './middleware/cors.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // Routes
+import authRoutes from './routes/auth.js';
+import superAdminRoutes from './routes/superAdmin.js';
 import servicesRoutes from './routes/services.js';
 import bookingsRoutes from './routes/bookings.js';
 import slotsRoutes from './routes/slots.js';
@@ -25,6 +27,8 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/services', servicesRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/slots', slotsRoutes);

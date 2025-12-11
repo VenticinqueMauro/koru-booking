@@ -1,16 +1,25 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma, handleDatabaseError } from '../utils/database.js';
 import { CreateServiceSchema, UpdateServiceSchema } from '../models/types.js';
 import { ZodError } from 'zod';
+import { DualAuthRequest } from '../middleware/dualAuth.js';
 
 export class ServicesController {
   /**
-   * GET /api/services - Obtener todos los servicios activos
+   * GET /api/services - Obtener todos los servicios activos (scoped by account)
    */
-  async getAll(req: Request, res: Response): Promise<void> {
+  async getAll(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const services = await prisma.service.findMany({
-        where: { active: true },
+        where: {
+          accountId: req.accountId,
+          active: true
+        },
         orderBy: { name: 'asc' },
       });
 
@@ -22,14 +31,22 @@ export class ServicesController {
   }
 
   /**
-   * GET /api/services/:id - Obtener un servicio específico
+   * GET /api/services/:id - Obtener un servicio específico (scoped by account)
    */
-  async getOne(req: Request, res: Response): Promise<void> {
+  async getOne(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const { id } = req.params;
-      
-      const service = await prisma.service.findUnique({
-        where: { id },
+
+      const service = await prisma.service.findFirst({
+        where: {
+          id,
+          accountId: req.accountId
+        },
       });
 
       if (!service) {
@@ -45,14 +62,22 @@ export class ServicesController {
   }
 
   /**
-   * POST /api/services - Crear un nuevo servicio
+   * POST /api/services - Crear un nuevo servicio (scoped by account)
    */
-  async create(req: Request, res: Response): Promise<void> {
+  async create(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const validatedData = CreateServiceSchema.parse(req.body);
 
       const service = await prisma.service.create({
-        data: validatedData,
+        data: {
+          ...validatedData,
+          accountId: req.accountId,
+        },
       });
 
       res.status(201).json(service);
@@ -61,19 +86,34 @@ export class ServicesController {
         res.status(400).json({ error: 'Datos inválidos', details: error.errors });
         return;
       }
-      
+
       console.error('Error creating service:', error);
       res.status(500).json({ error: handleDatabaseError(error) });
     }
   }
 
   /**
-   * PUT /api/services/:id - Actualizar un servicio
+   * PUT /api/services/:id - Actualizar un servicio (scoped by account)
    */
-  async update(req: Request, res: Response): Promise<void> {
+  async update(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const { id } = req.params;
       const validatedData = UpdateServiceSchema.parse(req.body);
+
+      // Verify service belongs to account
+      const existingService = await prisma.service.findFirst({
+        where: { id, accountId: req.accountId },
+      });
+
+      if (!existingService) {
+        res.status(404).json({ error: 'Servicio no encontrado' });
+        return;
+      }
 
       const service = await prisma.service.update({
         where: { id },
@@ -86,18 +126,33 @@ export class ServicesController {
         res.status(400).json({ error: 'Datos inválidos', details: error.errors });
         return;
       }
-      
+
       console.error('Error updating service:', error);
       res.status(500).json({ error: handleDatabaseError(error) });
     }
   }
 
   /**
-   * DELETE /api/services/:id - Eliminar un servicio (soft delete)
+   * DELETE /api/services/:id - Eliminar un servicio (soft delete, scoped by account)
    */
-  async delete(req: Request, res: Response): Promise<void> {
+  async delete(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const { id } = req.params;
+
+      // Verify service belongs to account
+      const existingService = await prisma.service.findFirst({
+        where: { id, accountId: req.accountId },
+      });
+
+      if (!existingService) {
+        res.status(404).json({ error: 'Servicio no encontrado' });
+        return;
+      }
 
       // Soft delete: marcar como inactivo en lugar de eliminar
       const service = await prisma.service.update({

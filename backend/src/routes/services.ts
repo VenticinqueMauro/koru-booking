@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { servicesController } from '../controllers/ServicesController.js';
+import { dualAuthMiddleware } from '../middleware/dualAuth.js';
 
 const router = Router();
+
+// All routes require authentication (JWT or Koru credentials)
+router.use(dualAuthMiddleware);
 
 router.get('/', (req, res) => servicesController.getAll(req, res));
 router.get('/:id', (req, res) => servicesController.getOne(req, res));

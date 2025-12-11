@@ -12,10 +12,13 @@ export class SlotCalculator {
    * 4. Filtrar slots ocupados y pasados
    * 5. Aplicar buffer post-servicio
    */
-  async calculateAvailableSlots(serviceId: string, dateString: string): Promise<string[]> {
-    // 1. Obtener el servicio
-    const service = await prisma.service.findUnique({
-      where: { id: serviceId },
+  async calculateAvailableSlots(accountId: string, serviceId: string, dateString: string): Promise<string[]> {
+    // 1. Obtener el servicio (scoped by account)
+    const service = await prisma.service.findFirst({
+      where: {
+        id: serviceId,
+        accountId: accountId,
+      },
     });
 
     if (!service || !service.active) {
@@ -26,18 +29,22 @@ export class SlotCalculator {
     const date = parseISO(dateString);
     const dayOfWeek = date.getDay();
 
-    // 3. Obtener el horario para ese día
-    const schedule = await prisma.schedule.findUnique({
-      where: { dayOfWeek },
+    // 3. Obtener el horario para ese día (scoped by account)
+    const schedule = await prisma.schedule.findFirst({
+      where: {
+        accountId: accountId,
+        dayOfWeek: dayOfWeek,
+      },
     });
 
     if (!schedule || !schedule.enabled) {
       return []; // No hay horario disponible para este día
     }
 
-    // 4. Obtener todas las reservas existentes para esa fecha
+    // 4. Obtener todas las reservas existentes para esa fecha (scoped by account)
     const existingBookings = await prisma.booking.findMany({
       where: {
+        accountId: accountId,
         date,
         status: { not: 'cancelled' },
       },
@@ -64,19 +71,19 @@ export class SlotCalculator {
 
     // 6. Filtrar slots ocupados
     const occupiedSlots = new Set<string>();
-    
+
     existingBookings.forEach((booking) => {
       const bookingStartTime = booking.time;
       const totalDuration = booking.service.duration + booking.service.buffer;
-      
+
       // Marcar como ocupados todos los slots que se solapen con esta reserva
       const bookingStart = this.parseTime(bookingStartTime);
       const bookingEnd = addMinutes(bookingStart, totalDuration);
-      
+
       allSlots.forEach((slot) => {
         const slotStart = this.parseTime(slot);
         const slotEnd = addMinutes(slotStart, service.duration);
-        
+
         // Verificar si hay solapamiento
         if (this.timesOverlap(slotStart, slotEnd, bookingStart, bookingEnd)) {
           occupiedSlots.add(slot);
@@ -87,22 +94,22 @@ export class SlotCalculator {
     // 7. Filtrar slots pasados (si la fecha es hoy)
     const now = new Date();
     const isToday = format(now, 'yyyy-MM-dd') === dateString;
-    
+
     const availableSlots = allSlots.filter((slot) => {
       // Si está ocupado, no está disponible
       if (occupiedSlots.has(slot)) {
         return false;
       }
-      
+
       // Si es hoy, filtrar slots pasados
       if (isToday) {
         const slotTime = this.parseTime(slot);
         const slotDateTime = new Date(now);
         slotDateTime.setHours(slotTime.getHours(), slotTime.getMinutes(), 0, 0);
-        
+
         return isAfter(slotDateTime, now);
       }
-      
+
       return true;
     });
 
@@ -122,35 +129,35 @@ export class SlotCalculator {
     const slots: string[] = [];
     const start = this.parseTime(startTime);
     const end = this.parseTime(endTime);
-    
+
     let current = start;
-    
+
     while (isBefore(current, end)) {
       const slotEnd = addMinutes(current, durationMinutes);
-      
+
       // Verificar que el slot completo quepa antes del cierre
       if (isAfter(slotEnd, end)) {
         break;
       }
-      
+
       const timeString = format(current, 'HH:mm');
-      
+
       // Verificar si el slot está en el break
       if (breakStart && breakEnd) {
         const breakStartTime = this.parseTime(breakStart);
         const breakEndTime = this.parseTime(breakEnd);
-        
+
         if (!this.timesOverlap(current, slotEnd, breakStartTime, breakEndTime)) {
           slots.push(timeString);
         }
       } else {
         slots.push(timeString);
       }
-      
+
       // Avanzar al siguiente slot (cada 15 minutos para mostrar más opciones)
       current = addMinutes(current, 15);
     }
-    
+
     return slots;
   }
 

@@ -1,18 +1,26 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma, handleDatabaseError } from '../utils/database.js';
 import { UpdateWidgetSettingsSchema } from '../models/types.js';
 import { ZodError } from 'zod';
+import { DualAuthRequest } from '../middleware/dualAuth.js';
 
 export class SettingsController {
 
     /**
-     * GET /api/settings - Obtener configuración del widget
-     * Si no existe, devuelve valores por defecto sin crear en DB (o crea uno por defecto)
+     * GET /api/settings - Obtener configuración del widget (scoped by account)
+     * Si no existe, devuelve valores por defecto sin crear en DB
      */
-    async get(req: Request, res: Response): Promise<void> {
+    async get(req: DualAuthRequest, res: Response): Promise<void> {
         try {
-            // Intentamos obtener la primera configuración encontrada
-            const settings = await prisma.widgetSettings.findFirst();
+            if (!req.accountId) {
+                res.status(401).json({ error: 'Authentication required' });
+                return;
+            }
+
+            // Intentamos obtener la configuración de la cuenta
+            const settings = await prisma.widgetSettings.findUnique({
+                where: { accountId: req.accountId },
+            });
 
             if (!settings) {
                 // Si no existe, devolvemos defaults (coincidiendo con schema prisma)
@@ -34,14 +42,21 @@ export class SettingsController {
     }
 
     /**
-     * POST /api/settings - Guardar/Actualizar configuración
+     * POST /api/settings - Guardar/Actualizar configuración (scoped by account)
      */
-    async update(req: Request, res: Response): Promise<void> {
+    async update(req: DualAuthRequest, res: Response): Promise<void> {
         try {
+            if (!req.accountId) {
+                res.status(401).json({ error: 'Authentication required' });
+                return;
+            }
+
             const validatedData = UpdateWidgetSettingsSchema.parse(req.body);
 
-            // Verificamos si ya existe una configuración
-            const existing = await prisma.widgetSettings.findFirst();
+            // Verificamos si ya existe una configuración para esta cuenta
+            const existing = await prisma.widgetSettings.findUnique({
+                where: { accountId: req.accountId },
+            });
 
             let settings;
             if (existing) {
@@ -51,7 +66,10 @@ export class SettingsController {
                 });
             } else {
                 settings = await prisma.widgetSettings.create({
-                    data: validatedData,
+                    data: {
+                        ...validatedData,
+                        accountId: req.accountId,
+                    },
                 });
             }
 

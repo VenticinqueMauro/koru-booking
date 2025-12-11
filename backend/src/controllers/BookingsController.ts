@@ -1,17 +1,24 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../utils/database.js';
 import { CreateBookingSchema } from '../models/types.js';
 import { conflictValidator } from '../services/ConflictValidator.js';
 import { emailService } from '../services/EmailService.js';
 import { ZodError } from 'zod';
+import { DualAuthRequest } from '../middleware/dualAuth.js';
 
 export class BookingsController {
-  async getAll(req: Request, res: Response): Promise<void> {
+  async getAll(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const { date, status } = req.query;
-      
+
       const bookings = await prisma.booking.findMany({
         where: {
+          accountId: req.accountId,
           ...(date && { date: new Date(date as string) }),
           ...(status && { status: status as string }),
         },
@@ -33,12 +40,31 @@ export class BookingsController {
     }
   }
 
-  async create(req: Request, res: Response): Promise<void> {
+  async create(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const validatedData = CreateBookingSchema.parse(req.body);
 
-      // Validar y crear con prevención de conflictos
+      // Verify service belongs to account
+      const service = await prisma.service.findFirst({
+        where: {
+          id: validatedData.serviceId,
+          accountId: req.accountId,
+        },
+      });
+
+      if (!service) {
+        res.status(404).json({ error: 'Servicio no encontrado' });
+        return;
+      }
+
+      // Validar y crear con prevención de conflictos (now with accountId)
       const booking = await conflictValidator.validateAndCreateBooking(
+        req.accountId,
         validatedData.serviceId,
         validatedData.date,
         validatedData.time,
@@ -67,17 +93,32 @@ export class BookingsController {
         res.status(400).json({ error: 'Datos inválidos', details: error.errors });
         return;
       }
-      
+
       console.error('Error creating booking:', error);
-      res.status(400).json({ 
-        error: (error as Error).message || 'Error al crear reserva' 
+      res.status(400).json({
+        error: (error as Error).message || 'Error al crear reserva'
       });
     }
   }
 
-  async cancel(req: Request, res: Response): Promise<void> {
+  async cancel(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const { id } = req.params;
+
+      // Verify booking belongs to account
+      const existingBooking = await prisma.booking.findFirst({
+        where: { id, accountId: req.accountId },
+      });
+
+      if (!existingBooking) {
+        res.status(404).json({ error: 'Reserva no encontrada' });
+        return;
+      }
 
       const booking = await prisma.booking.update({
         where: { id },

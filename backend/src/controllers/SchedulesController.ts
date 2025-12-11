@@ -1,12 +1,19 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma, handleDatabaseError } from '../utils/database.js';
 import { CreateScheduleSchema, UpdateScheduleSchema } from '../models/types.js';
 import { ZodError } from 'zod';
+import { DualAuthRequest } from '../middleware/dualAuth.js';
 
 export class SchedulesController {
-  async getAll(req: Request, res: Response): Promise<void> {
+  async getAll(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const schedules = await prisma.schedule.findMany({
+        where: { accountId: req.accountId },
         orderBy: { dayOfWeek: 'asc' },
       });
       res.json(schedules);
@@ -16,14 +23,27 @@ export class SchedulesController {
     }
   }
 
-  async createOrUpdate(req: Request, res: Response): Promise<void> {
+  async createOrUpdate(req: DualAuthRequest, res: Response): Promise<void> {
     try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
       const validatedData = CreateScheduleSchema.parse(req.body);
 
       const schedule = await prisma.schedule.upsert({
-        where: { dayOfWeek: validatedData.dayOfWeek },
+        where: {
+          accountId_dayOfWeek: {
+            accountId: req.accountId,
+            dayOfWeek: validatedData.dayOfWeek,
+          }
+        },
         update: validatedData,
-        create: validatedData,
+        create: {
+          ...validatedData,
+          accountId: req.accountId,
+        },
       });
 
       res.json(schedule);
