@@ -43,38 +43,66 @@ try {
     console.log('📦 Copying files to deploy directory...');
     copyDir(distPath, deployPath);
 
+    // Save current directory
+    const originalCwd = process.cwd();
+
+    // Change to deploy directory for all git operations
+    process.chdir(deployPath);
+
     // Step 3: Initialize new git repo in deploy
     console.log('📁 Initializing git...');
-    execSync('git init', { cwd: deployPath, stdio: 'inherit' });
+    execSync('git init', { stdio: 'inherit' });
 
     // Step 4: Configure git user
     console.log('👤 Configuring git user...');
-    execSync('git config user.name "Venticinque Mauro"', { cwd: deployPath });
-    execSync('git config user.email "102001296+VenticinqueMauro@users.noreply.github.com"', { cwd: deployPath });
+    execSync('git config user.name "Venticinque Mauro"', { stdio: 'pipe' });
+    execSync('git config user.email "102001296+VenticinqueMauro@users.noreply.github.com"', { stdio: 'pipe' });
 
     // Step 5: Add all files
     console.log('📝 Adding files...');
-    execSync('git add -A', { cwd: deployPath, stdio: 'inherit' });
+    execSync('git add -A', { stdio: 'inherit' });
 
     // Step 6: Commit
     console.log('💾 Creating commit...');
-    execSync('git commit -m "Deploy to gh-pages"', { cwd: deployPath, stdio: 'inherit' });
+    execSync('git commit -m "Deploy to gh-pages"', { stdio: 'inherit' });
 
     // Step 7: Add remote
     console.log('🔗 Adding remote...');
-    execSync('git remote add origin https://github.com/VenticinqueMauro/koru-booking.git', { cwd: deployPath });
+    execSync('git remote add origin https://github.com/VenticinqueMauro/koru-booking.git', { stdio: 'pipe' });
 
     // Step 8: Force push to gh-pages branch
     console.log('🚢 Pushing to gh-pages...');
-    execSync('git push origin master:gh-pages --force', { cwd: deployPath, stdio: 'inherit' });
+    execSync('git push origin master:gh-pages --force', { stdio: 'inherit' });
+
+    // Restore original directory
+    process.chdir(originalCwd);
 
     console.log('\n✅ Deployment successful!');
     console.log('🌐 Your site will be available at: https://venticinquemauro.github.io/koru-booking/');
 
 } catch (error) {
+    // Restore directory if we changed it
+    try {
+        const rootPath = path.join(__dirname, '..');
+        if (process.cwd() !== rootPath) {
+            process.chdir(rootPath);
+        }
+    } catch (e) {
+        // Ignore
+    }
     console.error('\n❌ Deployment failed:', error.message);
     process.exit(1);
 } finally {
+    // Make sure we're back in root
+    try {
+        const rootPath = path.join(__dirname, '..');
+        if (process.cwd() !== rootPath) {
+            process.chdir(rootPath);
+        }
+    } catch (e) {
+        // Ignore
+    }
+
     // Clean up deploy directory
     console.log('\n🧹 Cleaning up...');
     if (fs.existsSync(deployPath)) {
