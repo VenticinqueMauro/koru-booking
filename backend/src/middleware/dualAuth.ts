@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/authService.js';
 import { koruService } from '../services/koruService.js';
+import { accountInitService } from '../services/accountInitService.js';
 import { prisma } from '../utils/database.js';
 
 export interface DualAuthRequest extends Request {
@@ -42,6 +43,7 @@ export const dualAuthMiddleware = async (
 
         // Try Koru credentials (widget)
         if (websiteId && appId) {
+            // Verify credentials with Koru API
             const koruResponse = await koruService.verifyCredentials({ websiteId, appId });
 
             if (!koruResponse || !koruResponse.authorized) {
@@ -49,20 +51,32 @@ export const dualAuthMiddleware = async (
                 return;
             }
 
-            const account = await prisma.account.findUnique({
+            // Find or create account automatically
+            let account = await prisma.account.findUnique({
                 where: { websiteId },
             });
 
             if (!account) {
-                res.status(404).json({
-                    error: 'Account not found. Please login to backoffice first to initialize your account.'
-                });
-                return;
-            }
+                console.log(`🆕 Auto-creating Account for widget (websiteId: ${websiteId})`);
 
-            if (account.appId !== appId) {
-                res.status(401).json({ error: 'Invalid app_id for this account' });
-                return;
+                // Auto-create account with data from Koru API response
+                account = await accountInitService.createAndInitializeAccount(
+                    websiteId,
+                    appId,
+                    {
+                        businessName: koruResponse.app?.name || null,
+                        email: koruResponse.website?.url || null,
+                        config: koruResponse.config || {},
+                    }
+                );
+
+                console.log(`✅ Account auto-created successfully: ${account.id}`);
+            } else {
+                // Verify appId matches
+                if (account.appId !== appId) {
+                    res.status(401).json({ error: 'Invalid app_id for this account' });
+                    return;
+                }
             }
 
             req.accountId = account.id;

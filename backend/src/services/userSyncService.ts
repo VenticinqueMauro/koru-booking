@@ -5,6 +5,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { extractKoruUserInfo, decodeJwtWithoutVerification } from '../utils/jwtDecoder.js';
+import { accountInitService } from './accountInitService.js';
 
 const prisma = new PrismaClient();
 
@@ -54,31 +55,16 @@ export class UserSyncService {
                 return null;
             }
 
-            // Find or create Account
-            let account = await prisma.account.findUnique({
-                where: { websiteId },
-            });
-
-            if (!account) {
-                // Create new account
-                account = await prisma.account.create({
-                    data: {
-                        websiteId,
-                        appId,
-                        businessName: decoded?.businessName || null,
-                        email: userInfo.email || null,
-                        active: true,
-                    },
-                });
-
-                console.log(`✅ Created new Account: ${account.id} (websiteId: ${websiteId})`);
-
-                // Initialize default schedule for new account
-                await this.createDefaultSchedule(account.id);
-
-                // Initialize default widget settings
-                await this.createDefaultWidgetSettings(account.id, userInfo.email || 'admin@example.com');
-            }
+            // Find or create Account using accountInitService
+            const account = await accountInitService.findOrCreateAccount(
+                websiteId,
+                appId,
+                {
+                    businessName: decoded?.businessName || null,
+                    email: userInfo.email || null,
+                    config: {},
+                }
+            );
 
             // Find or create User
             let user = await prisma.user.findUnique({
@@ -138,48 +124,6 @@ export class UserSyncService {
             console.error('Error syncing Koru user:', error);
             return null;
         }
-    }
-
-    /**
-     * Create default schedule for new account (Mon-Fri 9am-6pm)
-     */
-    private async createDefaultSchedule(accountId: string): Promise<void> {
-        const defaultSchedule = [
-            { dayOfWeek: 0, enabled: false, startTime: '09:00', endTime: '18:00' }, // Sunday
-            { dayOfWeek: 1, enabled: true, startTime: '09:00', endTime: '18:00' },  // Monday
-            { dayOfWeek: 2, enabled: true, startTime: '09:00', endTime: '18:00' },  // Tuesday
-            { dayOfWeek: 3, enabled: true, startTime: '09:00', endTime: '18:00' },  // Wednesday
-            { dayOfWeek: 4, enabled: true, startTime: '09:00', endTime: '18:00' },  // Thursday
-            { dayOfWeek: 5, enabled: true, startTime: '09:00', endTime: '18:00' },  // Friday
-            { dayOfWeek: 6, enabled: false, startTime: '09:00', endTime: '18:00' }, // Saturday
-        ];
-
-        await prisma.schedule.createMany({
-            data: defaultSchedule.map((schedule) => ({
-                ...schedule,
-                accountId,
-            })),
-        });
-
-        console.log(`✅ Created default schedule for Account: ${accountId}`);
-    }
-
-    /**
-     * Create default widget settings for new account
-     */
-    private async createDefaultWidgetSettings(accountId: string, notifyEmail: string): Promise<void> {
-        await prisma.widgetSettings.create({
-            data: {
-                accountId,
-                layout: 'list',
-                stepInterval: 30,
-                accentColor: '#00C896',
-                notifyEmail,
-                timezone: 'America/Mexico_City',
-            },
-        });
-
-        console.log(`✅ Created default widget settings for Account: ${accountId}`);
     }
 
     /**
