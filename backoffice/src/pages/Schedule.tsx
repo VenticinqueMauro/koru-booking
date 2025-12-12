@@ -76,7 +76,7 @@ export default function SchedulePage() {
     <Layout>
       <div className="space-y-6">
         <header>
-          <h1 className="text-3xl font-bold tracking-tight">Configuración de Horarios</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Configuración de Horarios</h1>
           <p className="text-muted-foreground mt-2">
             Define los horarios de atención para cada día de la semana
           </p>

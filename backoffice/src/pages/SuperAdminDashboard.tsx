@@ -119,10 +119,10 @@ const SuperAdminDashboard: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-muted/40 p-4 md:p-8 space-y-8">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="min-h-screen bg-muted/40 p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Super Admin Dashboard</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Super Admin Dashboard</h1>
                     <p className="text-muted-foreground">User Account Management</p>
                 </div>
                 <Button variant="outline" onClick={logout}>
@@ -163,7 +163,7 @@ const SuperAdminDashboard: React.FC = () => {
 
             {/* Accounts Table */}
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
                     <div>
                         <CardTitle>Registered Users</CardTitle>
                         <CardDescription>Manage your platform users and their credentials.</CardDescription>
@@ -172,59 +172,61 @@ const SuperAdminDashboard: React.FC = () => {
                         <RotateCw className="mr-2 h-4 w-4" /> Refresh
                     </Button>
                 </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Business Name</TableHead>
-                                <TableHead>Website ID</TableHead>
-                                <TableHead>App ID</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Reference Website</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Created</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {accounts.map((account) => (
-                                <TableRow key={account.id}>
-                                    <TableCell className="font-medium">{account.businessName || 'N/A'}</TableCell>
-                                    <TableCell><code className="bg-muted px-1 py-0.5 rounded text-xs">{account.websiteId}</code></TableCell>
-                                    <TableCell><code className="bg-muted px-1 py-0.5 rounded text-xs">{account.appId}</code></TableCell>
-                                    <TableCell>
-                                        {account.email || <span className="text-muted-foreground italic text-xs">Not set</span>}
-                                    </TableCell>
-                                    <TableCell>
-                                        {account.referenceWebsite ? (
-                                            <a href={account.referenceWebsite} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline underline-offset-4">
-                                                Link
-                                            </a>
-                                        ) : (
-                                            <span className="text-muted-foreground italic text-xs">Not set</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={account.active ? 'default' : 'secondary'}>
-                                            {account.active ? 'Active' : 'Inactive'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground text-xs">
-                                        {new Date(account.createdAt).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleEditAccount(account)}
-                                        >
-                                            Edit
-                                        </Button>
-                                    </TableCell>
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Business Name</TableHead>
+                                    <TableHead>Website ID</TableHead>
+                                    <TableHead>App ID</TableHead>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Reference Website</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Created</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {accounts.map((account) => (
+                                    <TableRow key={account.id}>
+                                        <TableCell className="font-medium">{account.businessName || 'N/A'}</TableCell>
+                                        <TableCell><code className="bg-muted px-1 py-0.5 rounded text-xs">{account.websiteId}</code></TableCell>
+                                        <TableCell><code className="bg-muted px-1 py-0.5 rounded text-xs">{account.appId}</code></TableCell>
+                                        <TableCell>
+                                            {account.email || <span className="text-muted-foreground italic text-xs">Not set</span>}
+                                        </TableCell>
+                                        <TableCell>
+                                            {account.referenceWebsite ? (
+                                                <a href={account.referenceWebsite} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline underline-offset-4">
+                                                    Link
+                                                </a>
+                                            ) : (
+                                                <span className="text-muted-foreground italic text-xs">Not set</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={account.active ? 'default' : 'secondary'}>
+                                                {account.active ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground text-xs">
+                                            {new Date(account.createdAt).toLocaleDateString()}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleEditAccount(account)}
+                                            >
+                                                Edit
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 

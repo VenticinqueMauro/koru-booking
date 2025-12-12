@@ -9,7 +9,7 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-8">
         <header>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             Bienvenido al panel de administración de Koru Booking
           </p>
