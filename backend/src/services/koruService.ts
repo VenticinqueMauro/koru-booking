@@ -52,12 +52,12 @@ export class KoruService {
 
     /**
      * Verify credentials with Koru Suite API
-     * Uses the /api/widget/authorize endpoint
+     * Uses the /api/auth/widget endpoint
      */
     async verifyCredentials(credentials: KoruCredentials): Promise<KoruAuthorizeResponse | null> {
         try {
             const response = await axios.get<KoruAuthorizeResponse>(
-                `${this.koruApiUrl}/api/widget/authorize`,
+                `${this.koruApiUrl}/api/auth/widget`,
                 {
                     params: {
                         website_id: credentials.websiteId,
