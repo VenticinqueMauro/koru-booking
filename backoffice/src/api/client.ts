@@ -27,7 +27,9 @@ apiClient.interceptors.response.use(
         if (error.response?.status === 401) {
             localStorage.removeItem('auth_token');
             localStorage.removeItem('auth_state');
-            window.location.href = '/koru-booking/login';
+            // Use basename only in production
+            const basename = import.meta.env.PROD ? '/koru-booking' : '';
+            window.location.href = `${basename}/login`;
         }
         return Promise.reject(error);
     }

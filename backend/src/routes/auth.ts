@@ -12,6 +12,9 @@ router.post('/koru-login', (req, res) => authController.koruLogin(req, res));
 // GET /api/auth/verify - Verify JWT token
 router.get('/verify', (req, res) => authController.verify(req, res));
 
+// GET /api/auth/debug-token - Debug JWT token (decode and inspect)
+router.get('/debug-token', (req, res) => authController.debugToken(req, res));
+
 // POST /api/auth/logout - Logout (client-side token removal)
 router.post('/logout', (req, res) => authController.logout(req, res));
 

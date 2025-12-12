@@ -34,6 +34,12 @@ export const dualAuthMiddleware = async (
                 req.websiteId = decoded.websiteId;
                 req.authType = 'jwt';
 
+                if (!req.accountId) {
+                    console.error('JWT is valid but accountId is undefined');
+                    res.status(401).json({ error: 'Invalid account credentials' });
+                    return;
+                }
+
                 next();
                 return;
             } catch (error) {

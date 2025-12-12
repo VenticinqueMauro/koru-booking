@@ -178,6 +178,57 @@ export class AuthController {
     }
 
     /**
+     * DEBUG: Decode and inspect JWT token
+     * Helps diagnose authentication issues
+     */
+    async debugToken(req: Request, res: Response): Promise<void> {
+        try {
+            const authHeader = req.headers.authorization;
+
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                res.status(400).json({ error: 'No Bearer token provided' });
+                return;
+            }
+
+            const token = authHeader.substring(7);
+
+            // Decode without verification to see what's inside
+            const parts = token.split('.');
+            if (parts.length !== 3) {
+                res.status(400).json({ error: 'Invalid JWT format' });
+                return;
+            }
+
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+
+            // Also try to verify it
+            let verificationResult = 'Unknown';
+            try {
+                authService.verifyToken(token);
+                verificationResult = 'Valid';
+            } catch (error) {
+                verificationResult = `Invalid: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            }
+
+            res.json({
+                decoded: payload,
+                verification: verificationResult,
+                accountId: payload.accountId || 'UNDEFINED',
+                websiteId: payload.websiteId || 'UNDEFINED',
+                userId: payload.userId || 'UNDEFINED',
+                role: payload.role || 'UNDEFINED',
+                koruUserId: payload.koruUserId || 'UNDEFINED',
+            });
+        } catch (error) {
+            console.error('Debug token error:', error);
+            res.status(500).json({
+                error: 'Failed to decode token',
+                message: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+    }
+
+    /**
      * Get widget configuration from Koru API
      * Uses /api/config endpoint for lightweight config polling
      */

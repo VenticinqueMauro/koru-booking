@@ -122,7 +122,7 @@ export default function Services() {
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
                       <DollarSign className="mr-2 h-4 w-4" />
-                      <span>${service.price || 0}</span>
+                      <span>{service.price || 0}</span>
                     </div>
                     {service.buffer > 0 && (
                       <div className="flex items-center text-sm text-muted-foreground">
