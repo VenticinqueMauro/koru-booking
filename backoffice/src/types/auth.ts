@@ -10,6 +10,11 @@ export interface EmailPasswordCredentials {
     password: string;
 }
 
+export interface UsernamePasswordCredentials {
+    username: string;
+    password: string;
+}
+
 export interface Account {
     id: string;
     websiteId: string;

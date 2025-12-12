@@ -1,10 +1,16 @@
 import { apiClient } from './client';
-import type { KoruCredentials, EmailPasswordCredentials, LoginResponse } from '../types/auth';
+import type { KoruCredentials, EmailPasswordCredentials, UsernamePasswordCredentials, LoginResponse } from '../types/auth';
 
 export const authApi = {
     // Login with Koru credentials or email/password
     login: async (credentials: KoruCredentials | EmailPasswordCredentials): Promise<LoginResponse> => {
         const response = await apiClient.post<any, LoginResponse>('/auth/login', credentials);
+        return response;
+    },
+
+    // Koru user login with username/password (Identity Broker)
+    koruLogin: async (credentials: UsernamePasswordCredentials): Promise<LoginResponse> => {
+        const response = await apiClient.post<any, LoginResponse>('/auth/koru-login', credentials);
         return response;
     },
 

@@ -9,13 +9,12 @@ import { Loader2 } from 'lucide-react';
 
 const Login: React.FC = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { koruLogin, user, isSuperAdmin } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Unified credentials - can be either websiteId/email and appId/password
-    const [identifier, setIdentifier] = useState('');
-    const [secret, setSecret] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -23,24 +22,24 @@ const Login: React.FC = () => {
         setIsLoading(true);
 
         try {
-            // Determine if identifier is email or websiteId
-            const isEmail = identifier.includes('@');
+            // All users (admins and clients) login with username/password
+            await koruLogin({ username, password });
 
-            if (isEmail) {
-                // Super admin login
-                await login({ email: identifier, password: secret });
-                navigate('/admin');
-            } else {
-                // Koru client login
-                await login({ websiteId: identifier, appId: secret });
-                navigate('/dashboard');
-            }
+            // Navigation will happen in useEffect after auth state updates
         } catch (err: any) {
-            setError(err.message || 'Login failed');
+            setError(err.message || 'Invalid credentials');
         } finally {
             setIsLoading(false);
         }
     };
+
+    // Navigate after successful login based on role
+    React.useEffect(() => {
+        if (user && !isLoading) {
+            const destination = isSuperAdmin ? '/admin' : '/dashboard';
+            navigate(destination);
+        }
+    }, [user, isSuperAdmin, isLoading, navigate]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4 sm:p-6 lg:p-8">
@@ -54,37 +53,31 @@ const Login: React.FC = () => {
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="identifier">Website ID / Email</Label>
+                            <Label htmlFor="username">Username</Label>
                             <Input
-                                id="identifier"
+                                id="username"
                                 type="text"
-                                value={identifier}
-                                onChange={(e) => setIdentifier(e.target.value)}
-                                placeholder="name@example.com or Website ID"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="Enter your username"
                                 required
                                 disabled={isLoading}
                                 autoComplete="username"
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Clients: use Website ID | Administrators: use Email
-                            </p>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="secret">App ID / Password</Label>
+                            <Label htmlFor="password">Password</Label>
                             <Input
-                                id="secret"
+                                id="password"
                                 type="password"
-                                value={secret}
-                                onChange={(e) => setSecret(e.target.value)}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
                                 required
                                 disabled={isLoading}
                                 autoComplete="current-password"
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Clients: use App ID | Administrators: use Password
-                            </p>
                         </div>
 
                         {error && (
