@@ -64,11 +64,16 @@ export const dualAuthMiddleware = async (
                     websiteId,
                     appId,
                     {
-                        businessName: koruResponse.app?.name || null,
-                        email: koruResponse.website?.url || null,
+                        businessName: koruResponse.app?.name,
+                        email: koruResponse.website?.url,
                         config: koruResponse.config || {},
                     }
                 );
+
+                if (!account) {
+                    res.status(500).json({ error: 'Failed to create account' });
+                    return;
+                }
 
                 console.log(`✅ Account auto-created successfully: ${account.id}`);
             } else {
@@ -77,6 +82,12 @@ export const dualAuthMiddleware = async (
                     res.status(401).json({ error: 'Invalid app_id for this account' });
                     return;
                 }
+            }
+
+            // TypeScript null check (should never happen after the above logic)
+            if (!account) {
+                res.status(500).json({ error: 'Failed to create or find account' });
+                return;
             }
 
             req.accountId = account.id;

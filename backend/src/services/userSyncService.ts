@@ -27,28 +27,66 @@ export interface SyncedUser {
     } | null;
 }
 
+export interface KoruUserInfo {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+}
+
 export class UserSyncService {
     /**
      * Sync a Koru user to local database
      * Creates Account and User if they don't exist
      * Updates lastLoginAt on every login
+     *
+     * @param koruToken - The Koru access token (for backwards compatibility or token storage)
+     * @param userInfo - Direct user information from Koru response (preferred)
+     * @param username - Username from login credentials (for fallback)
      */
-    async syncKoruUser(koruToken: string): Promise<SyncedUser | null> {
+    async syncKoruUser(
+        koruToken: string,
+        userInfo?: KoruUserInfo,
+        username?: string
+    ): Promise<SyncedUser | null> {
         try {
-            // Extract user info from Koru JWT
-            const userInfo = extractKoruUserInfo(koruToken);
+            let koruUserId: string;
+            let email: string;
+            let name: string | null;
+            let websiteId: string | null = null;
+            let appId: string | null = null;
 
-            if (!userInfo.koruUserId) {
-                console.error('Cannot sync user: koruUserId not found in token');
-                return null;
-            }
-
-            // Decode full JWT to get additional info
+            // Decode JWT to get websiteId and appId (always needed for account linking)
             const decoded = decodeJwtWithoutVerification(koruToken);
 
+            let role: string = 'client'; // Default role
+
+            if (userInfo) {
+                // Use direct user info from new Koru response
+                koruUserId = userInfo.id;
+                email = userInfo.email;
+                name = userInfo.name || username || null;
+                // Map Koru "admin" role to our "super_admin"
+                role = userInfo.role === 'admin' ? 'super_admin' : 'client';
+            } else {
+                // Fallback: Extract user info from Koru JWT (old method)
+                const extractedInfo = extractKoruUserInfo(koruToken);
+
+                if (!extractedInfo.koruUserId) {
+                    console.error('Cannot sync user: koruUserId not found in token');
+                    return null;
+                }
+
+                koruUserId = extractedInfo.koruUserId;
+                email = extractedInfo.email || `${extractedInfo.username}@koru.user`;
+                name = extractedInfo.username;
+                websiteId = extractedInfo.websiteId;
+                appId = extractedInfo.appId;
+            }
+
             // Extract websiteId and appId (required for Account)
-            const websiteId = userInfo.websiteId || decoded?.website_id || decoded?.websiteId;
-            const appId = userInfo.appId || decoded?.app_id || decoded?.appId;
+            websiteId = websiteId || decoded?.website_id || decoded?.websiteId;
+            appId = appId || decoded?.app_id || decoded?.appId;
 
             if (!websiteId || !appId) {
                 console.error('Cannot sync user: websiteId or appId not found in token');
@@ -60,14 +98,14 @@ export class UserSyncService {
                 websiteId,
                 appId,
                 {
-                    businessName: decoded?.businessName || null,
-                    email: userInfo.email || null,
+                    businessName: decoded?.businessName,
+                    email: email,
                     config: {},
                 }
             );
 
             // Update notifyEmail if it's still the default placeholder and we have a real email
-            if (userInfo.email) {
+            if (email && !email.includes('@koru.user')) {
                 const settings = await prisma.widgetSettings.findUnique({
                     where: { accountId: account.id },
                     select: { notifyEmail: true },
@@ -76,26 +114,26 @@ export class UserSyncService {
                 if (settings?.notifyEmail === 'admin@example.com') {
                     await prisma.widgetSettings.update({
                         where: { accountId: account.id },
-                        data: { notifyEmail: userInfo.email },
+                        data: { notifyEmail: email },
                     });
-                    console.log(`✅ Updated notifyEmail to ${userInfo.email} for Account: ${account.id}`);
+                    console.log(`✅ Updated notifyEmail to ${email} for Account: ${account.id}`);
                 }
             }
 
             // Find or create User
             let user = await prisma.user.findUnique({
-                where: { koruUserId: userInfo.koruUserId },
+                where: { koruUserId },
             });
 
             if (!user) {
                 // Create new user linked to account
                 user = await prisma.user.create({
                     data: {
-                        email: userInfo.email || `${userInfo.username}@koru.user`,
-                        username: userInfo.username,
-                        koruUserId: userInfo.koruUserId,
-                        name: decoded?.name || userInfo.username || null,
-                        role: 'client', // Default role for Koru users
+                        email,
+                        username: username || name || email.split('@')[0],
+                        koruUserId,
+                        name,
+                        role, // Map Koru role to local role (admin -> super_admin)
                         accountId: account.id,
                         passwordHash: null, // Koru users don't have local password
                         active: true,
@@ -103,20 +141,22 @@ export class UserSyncService {
                     },
                 });
 
-                console.log(`✅ Created new User: ${user.id} (koruUserId: ${userInfo.koruUserId})`);
+                console.log(`✅ Created new User: ${user.id} (koruUserId: ${koruUserId}, role: ${role})`);
             } else {
-                // Update lastLoginAt and account link if changed
+                // Update lastLoginAt, account link, and user info if changed
                 user = await prisma.user.update({
                     where: { id: user.id },
                     data: {
                         lastLoginAt: new Date(),
                         accountId: account.id, // Update account link if it changed
-                        username: userInfo.username || user.username,
-                        email: userInfo.email || user.email,
+                        username: username || user.username,
+                        email: email || user.email,
+                        name: name || user.name,
+                        role, // Update role in case it changed in Koru
                     },
                 });
 
-                console.log(`✅ Updated User login: ${user.id}`);
+                console.log(`✅ Updated User login: ${user.id} (role: ${role})`);
             }
 
             return {

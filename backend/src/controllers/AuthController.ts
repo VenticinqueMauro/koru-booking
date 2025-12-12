@@ -66,7 +66,7 @@ export class AuthController {
             // Authenticate with Koru API
             const koruResponse = await koruService.loginUser({ username, password });
 
-            if (!koruResponse || !koruResponse.token) {
+            if (!koruResponse || !koruResponse.access_token) {
                 res.status(401).json({
                     success: false,
                     error: 'Invalid username or password'
@@ -74,8 +74,12 @@ export class AuthController {
                 return;
             }
 
-            // Sync user to local database
-            const syncedUser = await userSyncService.syncKoruUser(koruResponse.token);
+            // Sync user to local database with direct user info from Koru response
+            const syncedUser = await userSyncService.syncKoruUser(
+                koruResponse.access_token,
+                koruResponse.user,
+                username
+            );
 
             if (!syncedUser) {
                 res.status(500).json({
@@ -94,7 +98,8 @@ export class AuthController {
                     websiteId: syncedUser.account?.websiteId,
                     role: syncedUser.user.role,
                     koruUserId: syncedUser.user.koruUserId,
-                    koruToken: koruResponse.token, // Store Koru token for future validations
+                    koruToken: koruResponse.access_token, // Store Koru token for future validations
+                    koruTokenExpiresAt: koruResponse.expires_at, // Store expiration from Koru
                 },
                 jwtSecret,
                 { expiresIn: '24h' }
@@ -111,6 +116,7 @@ export class AuthController {
                     role: syncedUser.user.role,
                 },
                 account: syncedUser.account,
+                koruTokenExpiresAt: koruResponse.expires_at, // Include Koru token expiration
                 isSuperAdmin: false,
             });
         } catch (error) {

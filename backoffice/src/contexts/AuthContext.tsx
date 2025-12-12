@@ -20,6 +20,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         account: null,
         user: null,
         isSuperAdmin: false,
+        koruTokenExpiresAt: undefined,
     });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -64,6 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 account: response.account || null,
                 user: response.user || null,
                 isSuperAdmin: response.isSuperAdmin,
+                koruTokenExpiresAt: response.koruTokenExpiresAt,
             };
 
             // Save to state
@@ -75,6 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 account: newState.account,
                 user: newState.user,
                 isSuperAdmin: newState.isSuperAdmin,
+                koruTokenExpiresAt: newState.koruTokenExpiresAt,
             }));
         } catch (error: any) {
             console.error('Login error:', error);
@@ -90,6 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             account: null,
             user: null,
             isSuperAdmin: false,
+            koruTokenExpiresAt: undefined,
         });
 
         // Clear localStorage

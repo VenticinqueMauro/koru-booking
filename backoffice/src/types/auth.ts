@@ -20,8 +20,9 @@ export interface Account {
 export interface User {
     id: string;
     email: string;
-    role: 'admin' | 'super_admin';
+    role: 'admin' | 'super_admin' | 'client';
     name?: string;
+    username?: string;
 }
 
 export interface LoginResponse {
@@ -30,6 +31,7 @@ export interface LoginResponse {
     account?: Account;
     user?: User;
     isSuperAdmin: boolean;
+    koruTokenExpiresAt?: string; // Koru token expiration (ISO 8601)
 }
 
 export interface AuthState {
@@ -38,4 +40,5 @@ export interface AuthState {
     account: Account | null;
     user: User | null;
     isSuperAdmin: boolean;
+    koruTokenExpiresAt?: string; // Koru token expiration (ISO 8601)
 }

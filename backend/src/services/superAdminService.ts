@@ -25,6 +25,9 @@ export class SuperAdminService {
         }
 
         // Verify password
+        if (!user.passwordHash) {
+            throw new Error('Invalid credentials');
+        }
         const isValidPassword = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!isValidPassword) {
             throw new Error('Invalid credentials');

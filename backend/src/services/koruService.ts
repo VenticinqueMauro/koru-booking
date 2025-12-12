@@ -18,7 +18,16 @@ export interface KoruAuthorizeResponse {
 }
 
 export interface KoruLoginResponse {
-    token: string;
+    access_token: string;
+    token_type: string;
+    expires_in: number;
+    expires_at: string;
+    user: {
+        id: string;
+        email: string;
+        name: string;
+        role: string;
+    };
 }
 
 export interface KoruLoginCredentials {
@@ -132,7 +141,7 @@ export class KoruService {
      * Development mode: mock login for testing
      */
     async loginUserDev(credentials: KoruLoginCredentials): Promise<KoruLoginResponse | null> {
-        // In development, accept any non-empty credentials and return mock token
+        // In development, accept any non-empty credentials and return mock response
         if (credentials.username && credentials.password) {
             // Create a mock JWT with user info for testing
             const mockPayload = {
@@ -148,7 +157,18 @@ export class KoruService {
             // Base64 encode (not a real JWT signature, just for dev)
             const mockToken = 'dev.' + Buffer.from(JSON.stringify(mockPayload)).toString('base64') + '.mock';
 
-            return { token: mockToken };
+            return {
+                access_token: mockToken,
+                token_type: 'Bearer',
+                expires_in: 3600,
+                expires_at: new Date(Date.now() + 3600000).toISOString(),
+                user: {
+                    id: 'dev-user-id',
+                    email: `${credentials.username}@dev.test`,
+                    name: credentials.username,
+                    role: 'client',
+                },
+            };
         }
         return null;
     }
