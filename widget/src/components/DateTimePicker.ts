@@ -1,11 +1,12 @@
 import { format, addDays, startOfWeek, isSameDay, startOfMonth, endOfMonth, addMonths, subMonths, isBefore, startOfDay, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { apiClient, Service } from '../api/client';
+import { APIClient, Service } from '../api/client';
 import { formatDate, isSlotPast } from '../utils/date';
 
 export interface DateTimePickerOptions {
   service: Service;
   accentColor: string;
+  apiClient: APIClient;
   onSelect: (date: string, time: string) => void;
   onBack: () => void;
 }
@@ -222,7 +223,7 @@ export class DateTimePicker {
 
     try {
       const dateString = formatDate(this.selectedDate);
-      this.availableSlots = await apiClient.getSlots(this.options.service.id, dateString);
+      this.availableSlots = await this.options.apiClient.getSlots(this.options.service.id, dateString);
 
       // Filtrar slots pasados
       const validSlots = this.availableSlots.filter(

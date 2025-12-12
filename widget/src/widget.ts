@@ -321,6 +321,7 @@ export class BookingWidget extends KoruWidget {
           this.dateTimePicker = new DateTimePicker({
             service: this.selectedService,
             accentColor,
+            apiClient: this.apiClient,
             onSelect: (date, time) => this.handleDateTimeSelect(date, time, config),
             onBack: () => this.goToStep('service', config),
           });
