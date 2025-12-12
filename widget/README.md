@@ -1,6 +1,6 @@
 # Koru Booking Widget
 
-Widget embebible para sistema de reservas Koru Booking, integrado con [Koru Platform](https://app-manager.vercel.app).
+Widget embebible para sistema de reservas Koru Booking, integrado con [Koru Platform](https://www.korusuite.com).
 
 ## 🚀 Instalación en tu Sitio Web
 
@@ -13,7 +13,7 @@ Copia y pega este código en tu sitio web, justo antes del cierre de `</body>`:
   src="https://venticinquemauro.github.io/koru-booking/widget/koru-booking-widget.umd.js"
   data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783"
   data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
-  data-app-manager-url="https://app-manager.vercel.app"
+  data-app-manager-url="https://www.korusuite.com"
   async
 ></script>
 ```
@@ -31,7 +31,7 @@ Si quieres que el widget aparezca en un lugar específico, agrega un contenedor:
   src="https://venticinquemauro.github.io/koru-booking/widget/koru-booking-widget.umd.js"
   data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783"
   data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
-  data-app-manager-url="https://app-manager.vercel.app"
+  data-app-manager-url="https://www.korusuite.com"
   async
 ></script>
 ```
@@ -42,7 +42,7 @@ Si quieres que el widget aparezca en un lugar específico, agrega un contenedor:
 
 ## ⚙️ Configuración
 
-La configuración del widget se gestiona desde [Koru Platform](https://app-manager.vercel.app). Puedes personalizar:
+La configuración del widget se gestiona desde [Koru Platform](https://www.korusuite.com). Puedes personalizar:
 
 | Opción | Tipo | Descripción | Por Defecto |
 |--------|------|-------------|-------------|
