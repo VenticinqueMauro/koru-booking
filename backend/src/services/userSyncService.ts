@@ -35,6 +35,12 @@ export interface KoruUserInfo {
 }
 
 export class UserSyncService {
+    private koruAppId: string;
+
+    constructor() {
+        this.koruAppId = process.env.KORU_APP_ID || 'default-app';
+    }
+
     /**
      * Sync a Koru user to local database
      * Creates Account and User if they don't exist
@@ -84,28 +90,44 @@ export class UserSyncService {
                 appId = extractedInfo.appId;
             }
 
-            // Extract websiteId and appId (required for Account)
+            // Extract websiteId and appId (optional for new auth method)
             websiteId = websiteId || decoded?.website_id || decoded?.websiteId;
             appId = appId || decoded?.app_id || decoded?.appId;
 
-            if (!websiteId || !appId) {
-                console.error('Cannot sync user: websiteId or appId not found in token');
-                return null;
-            }
+            let account: any = null;
 
-            // Find or create Account using accountInitService
-            const account = await accountInitService.findOrCreateAccount(
-                websiteId,
-                appId,
-                {
-                    businessName: decoded?.businessName,
-                    email: email,
-                    config: {},
-                }
-            );
+            // Only create/link account if we have websiteId and appId
+            if (websiteId && appId) {
+                // Find or create Account using accountInitService
+                account = await accountInitService.findOrCreateAccount(
+                    websiteId,
+                    appId,
+                    {
+                        businessName: decoded?.businessName,
+                        email: email,
+                        config: {},
+                    }
+                );
+            } else if (role !== 'super_admin') {
+                // For non-admin users without websiteId/appId, create a default account based on their Koru user ID
+                console.log(`⚠️  No websiteId/appId found for user ${koruUserId}. Creating default account.`);
+                const defaultWebsiteId = `koru-user-${koruUserId}`;
+                const defaultAppId = this.koruAppId || 'default-app';
+
+                account = await accountInitService.findOrCreateAccount(
+                    defaultWebsiteId,
+                    defaultAppId,
+                    {
+                        businessName: name || email,
+                        email: email,
+                        config: {},
+                    }
+                );
+            }
+            // For super_admins without websiteId/appId, account remains null
 
             // Update notifyEmail if it's still the default placeholder and we have a real email
-            if (email && !email.includes('@koru.user')) {
+            if (account && email && !email.includes('@koru.user')) {
                 const settings = await prisma.widgetSettings.findUnique({
                     where: { accountId: account.id },
                     select: { notifyEmail: true },
@@ -126,7 +148,7 @@ export class UserSyncService {
             });
 
             if (!user) {
-                // Create new user linked to account
+                // Create new user linked to account (or null for super_admins)
                 user = await prisma.user.create({
                     data: {
                         email,
@@ -134,7 +156,7 @@ export class UserSyncService {
                         koruUserId,
                         name,
                         role, // Map Koru role to local role (admin -> super_admin)
-                        accountId: account.id,
+                        accountId: account?.id || null,
                         passwordHash: null, // Koru users don't have local password
                         active: true,
                         lastLoginAt: new Date(),
@@ -148,7 +170,7 @@ export class UserSyncService {
                     where: { id: user.id },
                     data: {
                         lastLoginAt: new Date(),
-                        accountId: account.id, // Update account link if it changed
+                        accountId: account?.id || user.accountId, // Update account link if it changed, or keep existing
                         username: username || user.username,
                         email: email || user.email,
                         name: name || user.name,
@@ -169,12 +191,12 @@ export class UserSyncService {
                     koruUserId: user.koruUserId,
                     accountId: user.accountId,
                 },
-                account: {
+                account: account ? {
                     id: account.id,
                     websiteId: account.websiteId,
                     appId: account.appId,
                     businessName: account.businessName,
-                },
+                } : null,
             };
         } catch (error) {
             console.error('Error syncing Koru user:', error);

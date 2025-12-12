@@ -117,7 +117,7 @@ export class AuthController {
                 },
                 account: syncedUser.account,
                 koruTokenExpiresAt: koruResponse.expires_at, // Include Koru token expiration
-                isSuperAdmin: false,
+                isSuperAdmin: syncedUser.user.role === 'super_admin',
             });
         } catch (error) {
             console.error('Koru login error:', error);
