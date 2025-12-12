@@ -78,6 +78,7 @@ export class BookingsController {
 
       // Enviar emails de confirmación (async, no bloqueante)
       emailService.sendBookingConfirmation({
+        accountId: req.accountId,
         customerName: booking.customerName,
         serviceName: booking.serviceName,
         date: booking.date,

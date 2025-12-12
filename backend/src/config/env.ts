@@ -29,19 +29,9 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL').optional(),
   SUPABASE_ANON_KEY: z.string().min(1).optional(),
 
-  // Email (SMTP)
-  SMTP_HOST: z.string().min(1, 'SMTP_HOST is required'),
-  SMTP_PORT: z
-    .string()
-    .regex(/^\d+$/, 'SMTP_PORT must be a number')
-    .transform(Number)
-    .default('587'),
-  SMTP_USER: z.string().min(1, 'SMTP_USER is required'),
-  SMTP_PASS: z.string().min(1, 'SMTP_PASS is required'),
-  EMAIL_FROM: z.string().email('EMAIL_FROM must be a valid email'),
-
-  // Admin
-  ADMIN_EMAIL: z.string().email('ADMIN_EMAIL must be a valid email'),
+  // Email (Resend)
+  RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY is required for sending emails').optional(),
+  EMAIL_FROM: z.string().email('EMAIL_FROM must be a valid email').default('noreply@example.com'),
 
   // Koru Platform
   KORU_API_URL: z.string().url('KORU_API_URL must be a valid URL').optional(),

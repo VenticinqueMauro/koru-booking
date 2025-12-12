@@ -1,5 +1,5 @@
-import nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
+import { Resend } from 'resend';
+import { prisma } from '../utils/database.js';
 
 interface EmailOptions {
   to: string;
@@ -8,6 +8,7 @@ interface EmailOptions {
 }
 
 interface BookingEmailData {
+  accountId: string;
   customerName: string;
   serviceName: string;
   date: string;
@@ -18,21 +19,18 @@ interface BookingEmailData {
 }
 
 export class EmailService {
-  private transporter: Transporter;
+  private resend: Resend;
   private fromEmail: string;
 
   constructor() {
-    this.fromEmail = process.env.EMAIL_FROM || 'noreply@koru-booking.com';
+    const apiKey = process.env.RESEND_API_KEY;
 
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false, // true para 465, false para otros puertos
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    if (!apiKey) {
+      console.warn('⚠️  RESEND_API_KEY no está configurada. Los emails no se enviarán.');
+    }
+
+    this.resend = new Resend(apiKey || 'dummy-key');
+    this.fromEmail = process.env.EMAIL_FROM || 'noreply@koru-booking.com';
   }
 
   /**
@@ -47,14 +45,20 @@ export class EmailService {
         html: this.generateCustomerEmail(bookingData),
       });
 
-      // Email al administrador
-      const adminEmail = process.env.ADMIN_EMAIL;
-      if (adminEmail) {
+      // Obtener email del administrador desde WidgetSettings
+      const settings = await prisma.widgetSettings.findUnique({
+        where: { accountId: bookingData.accountId },
+        select: { notifyEmail: true },
+      });
+
+      if (settings?.notifyEmail) {
         await this.sendEmail({
-          to: adminEmail,
+          to: settings.notifyEmail,
           subject: `Nueva Reserva - ${bookingData.serviceName}`,
           html: this.generateAdminEmail(bookingData),
         });
+      } else {
+        console.warn(`⚠️  No se encontró notifyEmail para accountId: ${bookingData.accountId}`);
       }
 
       console.log('✅ Emails de confirmación enviados');
@@ -65,15 +69,21 @@ export class EmailService {
   }
 
   /**
-   * Envía un email genérico
+   * Envía un email genérico usando Resend
    */
   private async sendEmail(options: EmailOptions): Promise<void> {
-    await this.transporter.sendMail({
+    const { data, error } = await this.resend.emails.send({
       from: this.fromEmail,
       to: options.to,
       subject: options.subject,
       html: options.html,
     });
+
+    if (error) {
+      throw new Error(`Error al enviar email: ${error.message}`);
+    }
+
+    console.log(`📧 Email enviado exitosamente (ID: ${data?.id})`);
   }
 
   /**

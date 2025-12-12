@@ -66,6 +66,22 @@ export class UserSyncService {
                 }
             );
 
+            // Update notifyEmail if it's still the default placeholder and we have a real email
+            if (userInfo.email) {
+                const settings = await prisma.widgetSettings.findUnique({
+                    where: { accountId: account.id },
+                    select: { notifyEmail: true },
+                });
+
+                if (settings?.notifyEmail === 'admin@example.com') {
+                    await prisma.widgetSettings.update({
+                        where: { accountId: account.id },
+                        data: { notifyEmail: userInfo.email },
+                    });
+                    console.log(`✅ Updated notifyEmail to ${userInfo.email} for Account: ${account.id}`);
+                }
+            }
+
             // Find or create User
             let user = await prisma.user.findUnique({
                 where: { koruUserId: userInfo.koruUserId },

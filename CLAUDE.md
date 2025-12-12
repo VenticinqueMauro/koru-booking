@@ -116,13 +116,11 @@ The deployment process:
 ### Backend (.env)
 ```
 DATABASE_URL=postgresql://...           # Supabase PostgreSQL URL
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=app-password
-SMTP_FROM=noreply@example.com
-ADMIN_EMAIL=admin@example.com          # Receives booking notifications
+RESEND_API_KEY=re_xxxxx                # Resend API key from https://resend.com/api-keys
+EMAIL_FROM=noreply@example.com         # Must be from a verified domain in Resend
 ```
+
+**Note**: Admin notification email is configured per account in `WidgetSettings.notifyEmail`, not in environment variables.
 
 ### Widget (.env)
 Widget uses Koru SDK authentication in production:
@@ -148,7 +146,8 @@ VITE_BACKEND_API_URL=https://koru-booking.onrender.com/api
 ### Email Notifications
 - Sent asynchronously after booking creation (non-blocking)
 - Two emails sent: customer confirmation + admin notification
-- Uses NodeMailer with SMTP configuration
+- Uses Resend API (modern email service for developers)
+- Email sender must be from a verified domain in Resend dashboard
 - Email failures don't prevent booking creation
 
 ### Time Slot Generation

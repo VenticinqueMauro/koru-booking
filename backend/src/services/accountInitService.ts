@@ -37,11 +37,14 @@ export class AccountInitService {
      */
     async initializeWidgetSettings(
         accountId: string,
+        accountEmail?: string,
         config?: Record<string, any>
     ): Promise<void> {
         // Extract config from Koru or use defaults
         const accentColor = config?.accentColor || config?.color || '#00C896';
-        const notifyEmail = config?.notifyEmail || config?.email || 'admin@example.com';
+
+        // Priority: 1) config.notifyEmail, 2) accountEmail, 3) config.email, 4) placeholder
+        const notifyEmail = config?.notifyEmail || accountEmail || config?.email || 'admin@example.com';
 
         await prisma.widgetSettings.create({
             data: {
@@ -54,7 +57,7 @@ export class AccountInitService {
             },
         });
 
-        console.log(`✅ Initialized widget settings for Account: ${accountId}`);
+        console.log(`✅ Initialized widget settings for Account: ${accountId} (notifyEmail: ${notifyEmail})`);
     }
 
     /**
@@ -88,8 +91,12 @@ export class AccountInitService {
         // Initialize schedule
         await this.initializeDefaultSchedule(account.id);
 
-        // Initialize widget settings
-        await this.initializeWidgetSettings(account.id, additionalData?.config);
+        // Initialize widget settings with account email
+        await this.initializeWidgetSettings(
+            account.id,
+            additionalData?.email || undefined,
+            additionalData?.config
+        );
 
         return account;
     }

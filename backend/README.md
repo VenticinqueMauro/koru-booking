@@ -137,11 +137,16 @@ npm run db:setup               # Setup completo: generate + migrate + seed
 
 ## 📧 Notificaciones
 
-El sistema envía emails automáticos mediante NodeMailer:
+El sistema envía emails automáticos mediante **Resend**:
 - Confirmación al cliente
 - Notificación al administrador
 
-Configura las variables SMTP en `.env`.
+**Configuración requerida**:
+1. Obtén una API key en https://resend.com/api-keys
+2. Verifica tu dominio en el dashboard de Resend
+3. Configura `RESEND_API_KEY` y `EMAIL_FROM` en `.env`
+
+**Importante**: El email configurado en `EMAIL_FROM` debe ser de un dominio verificado en Resend.
 
 ## 🐛 Debugging
 
