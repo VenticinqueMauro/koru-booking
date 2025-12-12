@@ -15,4 +15,7 @@ router.get('/verify', (req, res) => authController.verify(req, res));
 // POST /api/auth/logout - Logout (client-side token removal)
 router.post('/logout', (req, res) => authController.logout(req, res));
 
+// GET /api/auth/widget-config - Get widget configuration from Koru (lightweight polling)
+router.get('/widget-config', (req, res) => authController.getWidgetConfig(req, res));
+
 export default router;

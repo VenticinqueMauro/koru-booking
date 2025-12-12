@@ -30,6 +30,13 @@ export interface KoruLoginResponse {
     };
 }
 
+export interface KoruConfigResponse {
+    config: Record<string, any>;
+    app_name: string;
+    is_widget: boolean;
+    app_manifest: Record<string, any>;
+}
+
 export interface KoruLoginCredentials {
     username: string;
     password: string;
@@ -89,6 +96,43 @@ export class KoruService {
     }
 
     /**
+     * Get widget configuration without re-authorization
+     * Uses the /api/config endpoint (lightweight polling)
+     * Use this for config updates instead of full re-authorization
+     */
+    async getConfig(credentials: KoruCredentials): Promise<KoruConfigResponse | null> {
+        try {
+            const response = await axios.get<KoruConfigResponse>(
+                `${this.koruApiUrl}/api/config`,
+                {
+                    params: {
+                        website_id: credentials.websiteId,
+                        app_id: credentials.appId,
+                    },
+                    timeout: 10000, // 10 second timeout
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response?.status === 403) {
+                    console.error('Koru config fetch failed: App not active or validation failed');
+                } else if (error.response?.status === 400) {
+                    console.error('Koru config fetch failed: Missing required parameters');
+                } else if (error.response?.status === 404) {
+                    console.error('Koru config fetch failed: Widget/App not found');
+                } else {
+                    console.error('Koru API error:', error.message);
+                }
+            } else {
+                console.error('Koru config fetch error:', error);
+            }
+            return null;
+        }
+    }
+
+    /**
      * Login user with Koru credentials (username/password)
      * Uses the /api/auth/login endpoint (Identity Broker)
      */
@@ -135,6 +179,30 @@ export class KoruService {
     async verifyCredentialsDev(credentials: KoruCredentials): Promise<boolean> {
         // In development, accept any non-empty credentials
         return !!(credentials.websiteId && credentials.appId);
+    }
+
+    /**
+     * Development mode: mock config response for testing
+     */
+    async getConfigDev(credentials: KoruCredentials): Promise<KoruConfigResponse | null> {
+        // In development, return mock config
+        if (credentials.websiteId && credentials.appId) {
+            return {
+                config: {
+                    accentColor: '#00C896',
+                    displayMode: 'modal',
+                    triggerText: 'Book Now',
+                    apiUrl: 'http://localhost:4000/api',
+                },
+                app_name: 'Koru Booking Widget (Dev)',
+                is_widget: true,
+                app_manifest: {
+                    version: '1.0.0',
+                    features: ['booking', 'calendar', 'notifications'],
+                },
+            };
+        }
+        return null;
     }
 
     /**

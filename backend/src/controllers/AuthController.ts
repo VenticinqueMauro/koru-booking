@@ -176,6 +176,49 @@ export class AuthController {
         // This endpoint exists for consistency and future enhancements
         res.json({ success: true, message: 'Logged out successfully' });
     }
+
+    /**
+     * Get widget configuration from Koru API
+     * Uses /api/config endpoint for lightweight config polling
+     */
+    async getWidgetConfig(req: Request, res: Response): Promise<void> {
+        try {
+            const { websiteId, appId } = req.query;
+
+            if (!websiteId || !appId) {
+                res.status(400).json({
+                    success: false,
+                    error: 'websiteId and appId are required'
+                });
+                return;
+            }
+
+            // Get config from Koru API
+            const koruConfig = await koruService.getConfig({
+                websiteId: websiteId as string,
+                appId: appId as string,
+            });
+
+            if (!koruConfig) {
+                res.status(404).json({
+                    success: false,
+                    error: 'Widget configuration not found'
+                });
+                return;
+            }
+
+            res.json({
+                success: true,
+                ...koruConfig,
+            });
+        } catch (error) {
+            console.error('Get widget config error:', error);
+            res.status(500).json({
+                success: false,
+                error: error instanceof Error ? error.message : 'Failed to fetch widget configuration'
+            });
+        }
+    }
 }
 
 export const authController = new AuthController();
