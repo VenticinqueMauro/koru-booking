@@ -1,5 +1,8 @@
 import { Resend } from 'resend';
+import { render } from '@react-email/render';
 import { prisma } from '../utils/database.js';
+import BookingConfirmation from '../emails/templates/BookingConfirmation.js';
+import AdminNotification from '../emails/templates/AdminNotification.js';
 
 interface EmailOptions {
   to: string;
@@ -38,11 +41,26 @@ export class EmailService {
    */
   async sendBookingConfirmation(bookingData: BookingEmailData): Promise<void> {
     try {
+      // Generate calendar link
+      const calendarLink = this.generateCalendarLink(bookingData);
+      const formattedDate = this.formatDate(bookingData.date);
+
       // Email al cliente
+      const customerHtml = await render(
+        BookingConfirmation({
+          customerName: bookingData.customerName,
+          serviceName: bookingData.serviceName,
+          date: formattedDate,
+          time: bookingData.time,
+          notes: bookingData.notes,
+          calendarLink,
+        })
+      );
+
       await this.sendEmail({
         to: bookingData.customerEmail,
         subject: `Confirmación de Reserva - ${bookingData.serviceName}`,
-        html: this.generateCustomerEmail(bookingData),
+        html: customerHtml,
       });
 
       // Obtener email del administrador desde WidgetSettings
@@ -52,10 +70,22 @@ export class EmailService {
       });
 
       if (settings?.notifyEmail) {
+        const adminHtml = await render(
+          AdminNotification({
+            customerName: bookingData.customerName,
+            customerEmail: bookingData.customerEmail,
+            customerPhone: bookingData.customerPhone,
+            serviceName: bookingData.serviceName,
+            date: formattedDate,
+            time: bookingData.time,
+            notes: bookingData.notes,
+          })
+        );
+
         await this.sendEmail({
           to: settings.notifyEmail,
           subject: `Nueva Reserva - ${bookingData.serviceName}`,
-          html: this.generateAdminEmail(bookingData),
+          html: adminHtml,
         });
       } else {
         console.warn(`⚠️  No se encontró notifyEmail para accountId: ${bookingData.accountId}`);
@@ -86,150 +116,6 @@ export class EmailService {
     console.log(`📧 Email enviado exitosamente (ID: ${data?.id})`);
   }
 
-  /**
-   * Template de email para el cliente
-   */
-  private generateCustomerEmail(data: BookingEmailData): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #00C896 0%, #00A87E 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-          .detail-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #00C896; }
-          .detail-row { padding: 10px 0; border-bottom: 1px solid #eee; }
-          .detail-row:last-child { border-bottom: none; }
-          .label { font-weight: bold; color: #666; }
-          .value { color: #1a1a1a; }
-          .footer { text-align: center; padding: 20px; color: #666; font-size: 14px; }
-          .button { display: inline-block; padding: 12px 24px; background-color: #00C896; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>✅ Reserva Confirmada</h1>
-          </div>
-          <div class="content">
-            <p>Hola <strong>${data.customerName}</strong>,</p>
-            <p>Tu reserva ha sido confirmada exitosamente. Te esperamos en la fecha y hora indicadas.</p>
-            
-            <div class="detail-box">
-              <h3 style="margin-top: 0;">Detalles de tu Reserva</h3>
-              <div class="detail-row">
-                <span class="label">Servicio:</span>
-                <span class="value">${data.serviceName}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Fecha:</span>
-                <span class="value">${this.formatDate(data.date)}</span>
-              </div>
-              <div class="detail-row">
-                <span class="label">Hora:</span>
-                <span class="value">${data.time}</span>
-              </div>
-              ${data.notes ? `
-              <div class="detail-row">
-                <span class="label">Notas:</span>
-                <span class="value">${data.notes}</span>
-              </div>
-              ` : ''}
-            </div>
-
-            <p style="text-align: center;">
-              <a href="${this.generateCalendarLink(data)}" class="button">
-                📅 Añadir a mi Calendario
-              </a>
-            </p>
-
-            <p style="color: #666; font-size: 14px;">
-              Si necesitas cancelar o modificar tu reserva, por favor contáctanos lo antes posible.
-            </p>
-          </div>
-          <div class="footer">
-            <p>Gracias por confiar en nosotros</p>
-            <p style="font-size: 12px; color: #999;">Este es un email automático, por favor no respondas a esta dirección.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  /**
-   * Template de email para el administrador
-   */
-  private generateAdminEmail(data: BookingEmailData): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #1a1a1a; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-          .detail-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-          .detail-row { padding: 10px 0; border-bottom: 1px solid #eee; }
-          .detail-row:last-child { border-bottom: none; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h2>🔔 Nueva Reserva Recibida</h2>
-          </div>
-          <div class="content">
-            <p>Se ha registrado una nueva reserva en el sistema.</p>
-            
-            <div class="detail-box">
-              <h3>Información del Servicio</h3>
-              <div class="detail-row">
-                <strong>Servicio:</strong> ${data.serviceName}
-              </div>
-              <div class="detail-row">
-                <strong>Fecha:</strong> ${this.formatDate(data.date)}
-              </div>
-              <div class="detail-row">
-                <strong>Hora:</strong> ${data.time}
-              </div>
-            </div>
-
-            <div class="detail-box">
-              <h3>Información del Cliente</h3>
-              <div class="detail-row">
-                <strong>Nombre:</strong> ${data.customerName}
-              </div>
-              <div class="detail-row">
-                <strong>Email:</strong> ${data.customerEmail}
-              </div>
-              ${data.customerPhone ? `
-              <div class="detail-row">
-                <strong>Teléfono:</strong> ${data.customerPhone}
-              </div>
-              ` : ''}
-              ${data.notes ? `
-              <div class="detail-row">
-                <strong>Notas:</strong> ${data.notes}
-              </div>
-              ` : ''}
-            </div>
-
-            <p style="color: #666; font-size: 14px;">
-              Revisa el panel de administración para gestionar esta reserva.
-            </p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
 
   /**
    * Formatea la fecha para mostrar
