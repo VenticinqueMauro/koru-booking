@@ -16,7 +16,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@redclover/koru-sdk": "latest",
+    "@redclover/koru-sdk": "^1.1.1",
     "date-fns": "^3.0.0"
   },
   "devDependencies": {
