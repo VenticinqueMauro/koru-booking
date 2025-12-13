@@ -90,7 +90,8 @@ export class AuthController {
             }
 
             // Generate our own JWT with user and account info
-            const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
+            // IMPORTANT: Use the same JWT_SECRET as authService to ensure token verification works
+            const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
             const token = jwt.sign(
                 {
                     userId: syncedUser.user.id,
