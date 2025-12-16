@@ -89,7 +89,7 @@ try {
 
     // Step 7: Add remote
     console.log('🔗 Adding remote...');
-    execSync(gitCmd('remote add origin https://github.com/VenticinqueMauro/koru-booking.git'), { stdio: 'pipe' });
+    execSync(gitCmd('remote add origin https://github.com/Red-Clover-Consultoria/koru-booking.git'), { stdio: 'pipe' });
 
     // Step 8: Force push to gh-pages branch
     console.log('🚢 Pushing to gh-pages...');
@@ -99,7 +99,7 @@ try {
 
 
     console.log('\n✅ Deployment successful!');
-    console.log('🌐 Your site will be available at: https://venticinquemauro.github.io/koru-booking/');
+    console.log('🌐 Your site will be available at: https://red-clover-consultoria.github.io/koru-booking/');
 
 } catch (error) {
     // Restore directory if we changed it

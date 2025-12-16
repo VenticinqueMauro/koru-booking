@@ -3,7 +3,7 @@ import cors from 'cors';
 const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://venticinquemauro.github.io', // GitHub Pages
+  'https://red-clover-consultoria.github.io', // GitHub Pages
 ];
 
 export const corsMiddleware = cors({

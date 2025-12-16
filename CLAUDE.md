@@ -88,8 +88,8 @@ The deployment process:
    - Creates `.nojekyll` file for GitHub Pages
 3. `dist/` directory is force-pushed to `gh-pages` branch
 4. Deployed URLs:
-   - Backoffice: https://venticinquemauro.github.io/koru-booking/
-   - Widget demo: https://venticinquemauro.github.io/koru-booking/widget/
+   - Backoffice: https://red-clover-consultoria.github.io/koru-booking/
+   - Widget demo: https://red-clover-consultoria.github.io/koru-booking/widget/
 
 ## Database Schema
 

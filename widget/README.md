@@ -10,7 +10,7 @@ Copia y pega este código en tu sitio web, justo antes del cierre de `</body>`:
 
 ```html
 <script
-  src="https://venticinquemauro.github.io/koru-booking/widget/koru-booking-widget.umd.js"
+  src="https://red-clover-consultoria.github.io/koru-booking/widget/koru-booking-widget.umd.js"
   data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783"
   data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
   data-app-manager-url="https://www.korusuite.com"
@@ -28,7 +28,7 @@ Si quieres que el widget aparezca en un lugar específico, agrega un contenedor:
 
 <!-- Script al final del body -->
 <script
-  src="https://venticinquemauro.github.io/koru-booking/widget/koru-booking-widget.umd.js"
+  src="https://red-clover-consultoria.github.io/koru-booking/widget/koru-booking-widget.umd.js"
   data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783"
   data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
   data-app-manager-url="https://www.korusuite.com"

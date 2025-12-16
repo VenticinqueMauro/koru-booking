@@ -174,8 +174,8 @@ Este comando:
 
 ### URLs de Producción
 
-- **Backoffice**: https://venticinquemauro.github.io/koru-booking/
-- **Widget Demo**: https://venticinquemauro.github.io/koru-booking/widget/
+- **Backoffice**: https://red-clover-consultoria.github.io/koru-booking/
+- **Widget Demo**: https://red-clover-consultoria.github.io/koru-booking/widget/
 
 ## 🧪 Testing QA
 
