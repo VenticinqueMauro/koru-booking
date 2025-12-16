@@ -15,13 +15,12 @@ export class AuthController {
 
             // Determine login type
             if (email && password) {
-                // Super admin email/password login
+                // Admin email/password login
                 const result = await superAdminService.login({ email, password });
                 res.json({
                     success: true,
                     token: result.token,
                     user: result.user,
-                    isSuperAdmin: true,
                 });
             } else if (websiteId && appId) {
                 // Regular Koru authentication
@@ -30,7 +29,6 @@ export class AuthController {
                     success: true,
                     token: result.token,
                     account: result.account,
-                    isSuperAdmin: false,
                 });
             } else {
                 res.status(400).json({
@@ -97,7 +95,7 @@ export class AuthController {
                     userId: syncedUser.user.id,
                     accountId: syncedUser.account?.id,
                     websiteId: syncedUser.account?.websiteId,
-                    role: syncedUser.user.role,
+                    role: syncedUser.user.role, // Use Koru role directly: 'admin', 'client', etc.
                     koruUserId: syncedUser.user.koruUserId,
                     koruToken: koruResponse.access_token, // Store Koru token for future validations
                     koruTokenExpiresAt: koruResponse.expires_at, // Store expiration from Koru
@@ -114,11 +112,10 @@ export class AuthController {
                     email: syncedUser.user.email,
                     username: syncedUser.user.username,
                     name: syncedUser.user.name,
-                    role: syncedUser.user.role,
+                    role: syncedUser.user.role, // Frontend should check role === 'admin' for admin features
                 },
                 account: syncedUser.account,
                 koruTokenExpiresAt: koruResponse.expires_at, // Include Koru token expiration
-                isSuperAdmin: syncedUser.user.role === 'super_admin',
             });
         } catch (error) {
             console.error('Koru login error:', error);
@@ -150,18 +147,16 @@ export class AuthController {
                     valid: true,
                     accountId: decoded.accountId,
                     websiteId: decoded.websiteId,
-                    isSuperAdmin: false,
                 });
                 return;
             } catch {
-                // Try super admin token
+                // Try admin token
                 const decoded = superAdminService.verifyToken(token);
                 res.json({
                     valid: true,
                     userId: decoded.userId,
                     email: decoded.email,
                     role: decoded.role,
-                    isSuperAdmin: decoded.isSuperAdmin,
                 });
             }
         } catch (error) {

@@ -41,8 +41,8 @@ model Account {
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
-  passwordHash String?  // Hashed password with bcrypt (only for super_admin, null for Koru users)
-  role         String   @default("client") // "client", "admin", or "super_admin"
+  passwordHash String?  // Hashed password with bcrypt (only for local admin users, null for Koru users)
+  role         String   @default("client") // Roles from Koru: "admin" (full access), "client" (regular user), or legacy "super_admin"
   name         String?
   username     String?  // Username from Koru (for Koru users)
   koruUserId   String?  @unique // User ID from Koru system
@@ -51,7 +51,7 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // Optional relation to Account (null for super_admin, set for Koru users)
+  // Optional relation to Account (null for admins without account, set for regular users)
   accountId    String?
   account      Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
 

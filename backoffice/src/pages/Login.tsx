@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 
 const Login: React.FC = () => {
     const navigate = useNavigate();
-    const { koruLogin, user, isSuperAdmin } = useAuth();
+    const { koruLogin, user, isAdmin } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -36,10 +36,10 @@ const Login: React.FC = () => {
     // Navigate after successful login based on role
     React.useEffect(() => {
         if (user && !isLoading) {
-            const destination = isSuperAdmin ? '/admin' : '/dashboard';
+            const destination = isAdmin ? '/admin' : '/dashboard';
             navigate(destination);
         }
-    }, [user, isSuperAdmin, isLoading, navigate]);
+    }, [user, isAdmin, isLoading, navigate]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4 sm:p-6 lg:p-8">

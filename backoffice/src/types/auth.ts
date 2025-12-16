@@ -35,7 +35,6 @@ export interface LoginResponse {
     token: string;
     account?: Account;
     user?: User;
-    isSuperAdmin: boolean;
     koruTokenExpiresAt?: string; // Koru token expiration (ISO 8601)
 }
 
@@ -44,6 +43,5 @@ export interface AuthState {
     token: string | null;
     account: Account | null;
     user: User | null;
-    isSuperAdmin: boolean;
     koruTokenExpiresAt?: string; // Koru token expiration (ISO 8601)
 }

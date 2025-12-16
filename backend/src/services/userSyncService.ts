@@ -72,8 +72,8 @@ export class UserSyncService {
                 koruUserId = userInfo.id;
                 email = userInfo.email;
                 name = userInfo.name || username || null;
-                // Map Koru "admin" role to our "super_admin"
-                role = userInfo.role === 'admin' ? 'super_admin' : 'client';
+                // Use Koru role directly as source of truth
+                role = userInfo.role || 'client';
             } else {
                 // Fallback: Extract user info from Koru JWT (old method)
                 const extractedInfo = extractKoruUserInfo(koruToken);
@@ -108,7 +108,7 @@ export class UserSyncService {
                         config: {},
                     }
                 );
-            } else if (role !== 'super_admin') {
+            } else if (role !== 'admin') {
                 // For non-admin users without websiteId/appId, create a default account based on their Koru user ID
                 console.log(`⚠️  No websiteId/appId found for user ${koruUserId}. Creating default account.`);
                 const defaultWebsiteId = `koru-user-${koruUserId}`;
@@ -124,7 +124,7 @@ export class UserSyncService {
                     }
                 );
             }
-            // For super_admins without websiteId/appId, account remains null
+            // For admins without websiteId/appId, account remains null
 
             // Update notifyEmail if it's still the default placeholder and we have a real email
             if (account && email && !email.includes('@koru.user')) {

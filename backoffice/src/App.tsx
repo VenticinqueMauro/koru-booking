@@ -21,13 +21,13 @@ const queryClient = new QueryClient({
 
 // Component to handle root redirect based on user role
 const RootRedirect = () => {
-  const { isSuperAdmin, isLoading } = useAuth();
+  const { isAdmin, isLoading } = useAuth();
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  return <Navigate to={isSuperAdmin ? "/admin" : "/dashboard"} replace />;
+  return <Navigate to={isAdmin ? "/admin" : "/dashboard"} replace />;
 };
 
 function App() {
@@ -42,11 +42,11 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<RootRedirect />} />
 
-            {/* Super Admin Route */}
+            {/* Admin Route */}
             <Route
               path="/admin"
               element={
-                <ProtectedRoute requireSuperAdmin>
+                <ProtectedRoute requireAdmin>
                   <SuperAdminDashboard />
                 </ProtectedRoute>
               }

@@ -13,7 +13,7 @@ export class SuperAdminService {
     }
 
     /**
-     * Authenticate super admin with email and password
+     * Authenticate admin with email and password
      */
     async login(credentials: EmailPasswordCredentials): Promise<{ token: string; user: AuthenticatedUser }> {
         const user = await prisma.user.findUnique({
@@ -48,7 +48,7 @@ export class SuperAdminService {
     }
 
     /**
-     * Create super admin user (run once during setup)
+     * Create admin user (run once during setup)
      */
     async createSuperAdmin(email: string, password: string, name?: string): Promise<void> {
         const existingUser = await prisma.user.findUnique({
@@ -74,20 +74,19 @@ export class SuperAdminService {
 
     generateToken(userId: string, email: string, role: string): string {
         return jwt.sign(
-            { userId, email, role, isSuperAdmin: role === 'super_admin' },
+            { userId, email, role },
             this.jwtSecret,
             { expiresIn: this.jwtExpiresIn } as jwt.SignOptions
         );
     }
 
-    verifyToken(token: string): { userId: string; email: string; role: string; isSuperAdmin: boolean } {
+    verifyToken(token: string): { userId: string; email: string; role: string } {
         try {
             const decoded = jwt.verify(token, this.jwtSecret) as any;
             return {
                 userId: decoded.userId,
                 email: decoded.email,
                 role: decoded.role,
-                isSuperAdmin: decoded.isSuperAdmin || false,
             };
         } catch (error) {
             throw new Error('Invalid or expired token');
@@ -95,7 +94,7 @@ export class SuperAdminService {
     }
 
     /**
-     * Get all accounts (super admin only)
+     * Get all accounts (admin only)
      */
     async getAllAccounts() {
         return prisma.account.findMany({
