@@ -1,0 +1,144 @@
+// Prisma Schema para Koru Booking - Multi-Tenant Architecture
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// MULTI-TENANT MODELS
+// ============================================
+
+model Account {
+  id               String   @id @default(uuid())
+  websiteId        String   @unique  // Koru website_id
+  appId            String              // Koru app_id
+  businessName     String?            // Optional business name from Koru
+  email            String?            // Optional email for account access
+  passwordHash     String?            // Optional hashed password
+  referenceWebsite String?            // Reference website for identification
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  services  Service[]
+  bookings  Booking[]
+  schedules Schedule[]
+  settings  WidgetSettings?
+  users     User[]     // Multiple users can be associated with an account
+
+  @@unique([websiteId, appId])
+  @@index([websiteId])
+  @@index([active])
+  @@index([email])
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String?  // Hashed password with bcrypt (only for super_admin, null for Koru users)
+  role         String   @default("client") // "client", "admin", or "super_admin"
+  name         String?
+  username     String?  // Username from Koru (for Koru users)
+  koruUserId   String?  @unique // User ID from Koru system
+  active       Boolean  @default(true)
+  lastLoginAt  DateTime? // Track last login for security
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Optional relation to Account (null for super_admin, set for Koru users)
+  accountId    String?
+  account      Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([role])
+  @@index([accountId])
+  @@index([koruUserId])
+  @@index([username])
+}
+
+// ============================================
+// BUSINESS MODELS (Account-scoped)
+// ============================================
+
+model Service {
+  id        String    @id @default(uuid())
+  accountId String    // Link to account for multi-tenancy
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  name      String
+  duration  Int       // minutos
+  price     Decimal?
+  buffer    Int       @default(0) // minutos de preparación post-servicio
+  imageUrl  String?
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  bookings  Booking[]
+
+  @@index([accountId, active])  // Composite index for efficient queries
+  @@index([active])
+}
+
+model Schedule {
+  id         String   @id @default(uuid())
+  accountId  String   // Link to account for multi-tenancy
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  dayOfWeek  Int      // 0-6 (Domingo-Sábado)
+  enabled    Boolean  @default(true)
+  startTime  String   // "09:00"
+  endTime    String   // "18:00"
+  breakStart String?  // "13:00" (opcional)
+  breakEnd   String?  // "14:00" (opcional)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([accountId, dayOfWeek])  // One schedule per day per account
+  @@index([accountId, enabled])
+}
+
+model Booking {
+  id            String   @id @default(uuid())
+  accountId     String   // Link to account for multi-tenancy
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  serviceId     String
+  service       Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  date          DateTime // Solo fecha
+  time          String   // "10:00"
+  notes         String?
+  status        String   @default("confirmed") // confirmed, cancelled, completed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([accountId, serviceId, date, time]) // Prevent duplicates per account
+  @@index([accountId, date])
+  @@index([accountId, status])
+  @@index([date])
+  @@index([status])
+}
+
+model WidgetSettings {
+  id           String   @id @default(uuid())
+  accountId    String   @unique  // One settings per account
+  account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  layout       String   @default("list") // list, grid, button
+  stepInterval Int      @default(30) // minutos
+  accentColor  String   @default("#00C896")
+  notifyEmail  String
+  timezone     String   @default("America/Mexico_City")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

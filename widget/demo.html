@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Koru Booking Widget - Demo</title>
+  <link rel="stylesheet" href="https://venticinquemauro.github.io/koru-booking/widget/koru-booking-widget.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 60px 20px;
+      font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f766e 0%, #14b8a6 50%, #2dd4bf 100%);
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Subtle texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .demo-container {
+      max-width: 960px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    .demo-header {
+      text-align: center;
+      color: white;
+      margin-bottom: 48px;
+      animation: fade-in-down 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes fade-in-down {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .demo-header h1 {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .demo-header p {
+      font-size: 19px;
+      opacity: 0.95;
+      font-weight: 500;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    #widget-root {
+      animation: fade-in-up 0.9s cubic-bezier(0.4, 0, 0.2, 1) 0.2s backwards;
+    }
+
+    @keyframes fade-in-up {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 40px 16px;
+      }
+
+      .demo-header h1 {
+        font-size: 32px;
+      }
+
+      .demo-header p {
+        font-size: 17px;
+      }
+
+      .demo-container {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>🗓️ Koru Booking Widget</h1>
+      <p>Sistema de reservas en tiempo real</p>
+    </div>
+
+    <div id="widget-root"></div>
+  </div>
+
+  <!-- Koru Widget Script (Production) -->
+  <script src="https://venticinquemauro.github.io/koru-booking/widget/koru-booking-widget.umd.js"
+    data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783" data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
+    data-app-manager-url="https://www.korusuite.com" async></script>
+</body>
+
+</html>

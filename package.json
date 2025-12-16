@@ -1,0 +1,16 @@
+{
+    "name": "koru-booking-root",
+    "private": true,
+    "scripts": {
+        "deploy": "npm run build:all && node scripts/deploy-manual.js",
+        "build:all": "npm run build:backoffice && npm run build:widget && npm run copy:dist",
+        "build:backoffice": "cd backoffice && npm install && npm run build",
+        "build:widget": "cd widget && npm install && npm run build",
+        "copy:dist": "node scripts/copy-dist.js",
+        "clean:dist-git": "node scripts/clean-dist-git.js"
+    },
+    "devDependencies": {
+        "gh-pages": "^6.1.0",
+        "rimraf": "^5.0.5"
+    }
+}
