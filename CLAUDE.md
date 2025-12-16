@@ -218,6 +218,41 @@ Each folder should have **maximum 1-2 essential .md files**:
 3. Update existing docs instead of creating new ones
 4. Verify .gitignore excludes build artifacts and temp files
 
+## Git Commit Guidelines
+
+### Commit Message Format
+- Use conventional commit format: `type: description`
+- Types: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`, `style`
+- Keep first line under 72 characters
+- Include detailed description in body if needed
+
+### ❌ DO NOT Include:
+- **Claude Code attribution footer** - Do NOT add the following to commits:
+  ```
+  🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+  Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+  ```
+- Emoji in commit messages (except conventional commit scopes if used)
+- Marketing language or unnecessary praise
+- Redundant information already in code changes
+
+### ✅ Good Commit Message Example:
+```
+refactor: simplify auth to use Koru roles directly
+
+Remove role mapping layer and use Koru Suite roles as source of truth.
+Fixes authentication issue where Koru admin users received 403 errors.
+
+Backend changes:
+- Remove role mapping in userSyncService
+- Update middleware to validate role directly
+
+Frontend changes:
+- Add computed isAdmin property
+- Update components to use isAdmin
+```
+
 ## Common Development Workflows
 
 ### Adding a New Service Field
