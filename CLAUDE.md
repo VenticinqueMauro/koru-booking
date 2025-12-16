@@ -110,6 +110,21 @@ netlify login
 - Backoffice: `989ed12a-f968-4f13-93bd-64c2bdad412d`
 - Widget: `edd136c6-1000-4c64-a6fe-848d09335fe6`
 
+**Quick Start - Deploy Everything:**
+```bash
+# From project root
+npm run deploy
+```
+This will:
+1. Build backoffice (`npm run build:backoffice`)
+2. Build widget (`npm run build:widget`)
+3. Deploy both to Netlify automatically
+
+**Troubleshooting:**
+- If `netlify` command not found: `npm install -g netlify-cli`
+- If authentication error: `netlify login`
+- To check deployment status: `netlify status` (from backoffice/ or widget/)
+
 ## Database Schema
 
 ### Key Models (Prisma)

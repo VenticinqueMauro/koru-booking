@@ -45,6 +45,10 @@ coverage/
 *.tsbuildinfo
 .cache/
 
+# Netlify
+.netlify/
+**/.netlify/
+
 # Claude Code
 .claude/
 .agent/
