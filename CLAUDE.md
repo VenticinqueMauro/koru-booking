@@ -16,8 +16,9 @@ Koru Booking is a distributed booking/appointments system with 3 independent com
 npm run build:all          # Build all components
 npm run build:backoffice   # Build backoffice only
 npm run build:widget       # Build widget only
-npm run copy:dist          # Copy builds to dist/ for deployment
-npm run deploy             # Build all + deploy to gh-pages
+npm run deploy             # Build all + deploy to Netlify
+npm run deploy:backoffice  # Deploy backoffice only
+npm run deploy:widget      # Deploy widget only
 ```
 
 ### Backend (cd backend/)
@@ -76,20 +77,38 @@ The widget extends `KoruWidget` from `@redclover/koru-sdk`:
 **IMPORTANT**: The backoffice was recently decoupled from Koru SDK:
 - It is now open access without authentication
 - Do NOT add `@redclover/koru-react-sdk` dependency back
-- Router uses `basename="/koru-booking"` for GitHub Pages deployment
 - Future authentication will be implemented separately
 
-### 5. Deployment to GitHub Pages
-The deployment process:
-1. `npm run build:all` builds both widget and backoffice
-2. `scripts/copy-dist.js` copies builds to `dist/`:
-   - Backoffice files go to `dist/` root
-   - Widget files go to `dist/widget/`
-   - Creates `.nojekyll` file for GitHub Pages
-3. `dist/` directory is force-pushed to `gh-pages` branch
-4. Deployed URLs:
-   - Backoffice: https://red-clover-consultoria.github.io/koru-booking/
-   - Widget demo: https://red-clover-consultoria.github.io/koru-booking/widget/
+### 5. Deployment to Netlify
+Each component deploys independently to Netlify:
+
+**Prerequisites:**
+```bash
+npm install -g netlify-cli
+netlify login
+```
+
+**Deployment Process:**
+1. **Deploy all**: `npm run deploy`
+   - Builds both widget and backoffice
+   - Deploys each to their respective Netlify site
+
+2. **Deploy individually**:
+   - Backoffice: `npm run deploy:backoffice`
+   - Widget: `npm run deploy:widget`
+
+**Configuration:**
+- Each component has its own `netlify.toml` file
+- Backoffice: SPA routing redirects configured
+- Widget: CORS headers enabled for embedding
+
+**Production URLs:**
+- Backoffice: https://koru-booking-backoffice.netlify.app
+- Widget: https://koru-booking-widget.netlify.app
+
+**Site IDs (configured in scripts):**
+- Backoffice: `989ed12a-f968-4f13-93bd-64c2bdad412d`
+- Widget: `edd136c6-1000-4c64-a6fe-848d09335fe6`
 
 ## Database Schema
 
@@ -172,10 +191,10 @@ Both widget and backoffice use centralized API clients:
 ## Critical Notes
 
 1. **Never re-add Koru SDK to backoffice** - It was intentionally removed to make it open access
-2. **BrowserRouter basename** - Backoffice requires `basename="/koru-booking"` for gh-pages routing
-3. **Unique constraints** - The `(serviceId, date, time)` constraint is essential for preventing double-bookings
-4. **Transaction usage** - Always use Prisma transactions when checking availability + creating bookings
-5. **Production API URL** - Backend deployed on Render: https://koru-booking.onrender.com/api
+2. **Unique constraints** - The `(serviceId, date, time)` constraint is essential for preventing double-bookings
+3. **Transaction usage** - Always use Prisma transactions when checking availability + creating bookings
+4. **Production API URL** - Backend deployed on Render: https://koru-booking.onrender.com/api
+5. **Deployment** - Use Netlify for static hosting (backoffice and widget deploy independently)
 
 ## Repository Cleanliness Policy
 
@@ -270,6 +289,6 @@ Frontend changes:
 
 ### Deploying Changes
 1. Commit all changes to `master` branch
-2. Run `npm run build:all` from root
-3. Manually deploy dist folder to gh-pages branch (see deployment section in code)
-4. Push master branch changes: `git push origin master`
+2. Push changes: `git push origin master`
+3. Deploy to Netlify: `npm run deploy` (deploys both backoffice and widget)
+   - Or deploy individually: `npm run deploy:backoffice` or `npm run deploy:widget`

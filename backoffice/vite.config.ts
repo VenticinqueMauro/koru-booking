@@ -4,8 +4,7 @@ import path from 'path';
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  // Use base path only in production (GitHub Pages)
-  base: mode === 'production' ? '/koru-booking/' : '/',
+  base: '/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

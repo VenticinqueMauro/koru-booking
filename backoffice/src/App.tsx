@@ -31,13 +31,10 @@ const RootRedirect = () => {
 };
 
 function App() {
-  // Use basename only in production (GitHub Pages)
-  const basename = import.meta.env.PROD ? '/koru-booking' : '';
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter basename={basename}>
+        <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<RootRedirect />} />

@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 
 export default defineConfig({
-  base: '/koru-booking/widget/',
+  base: '/',
   build: {
     cssCodeSplit: false,
     lib: {
