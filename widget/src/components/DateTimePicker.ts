@@ -18,6 +18,7 @@ export class DateTimePicker {
   private currentMonth: Date;
   private availableSlots: string[] = [];
   private loading: boolean = false;
+  private abortController: AbortController | null = null;
 
   constructor(options: DateTimePickerOptions) {
     this.options = options;
@@ -218,12 +219,30 @@ export class DateTimePicker {
     const slotsContainer = document.getElementById('kb-slots-container');
     if (!slotsContainer) return;
 
+    // Cancel previous request if it exists
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+
+    // Create new AbortController for this request
+    this.abortController = new AbortController();
+    const currentController = this.abortController;
+
     this.loading = true;
     slotsContainer.innerHTML = '<div class="kb-loading">Cargando disponibilidad...</div>';
 
     try {
       const dateString = formatDate(this.selectedDate);
-      this.availableSlots = await this.options.apiClient.getSlots(this.options.service.id, dateString);
+      this.availableSlots = await this.options.apiClient.getSlots(
+        this.options.service.id,
+        dateString,
+        currentController.signal
+      );
+
+      // Check if this request was aborted
+      if (currentController.signal.aborted) {
+        return;
+      }
 
       // Filtrar slots pasados
       const validSlots = this.availableSlots.filter(
@@ -263,6 +282,10 @@ export class DateTimePicker {
 
       slotsContainer.appendChild(slotsGrid);
     } catch (error) {
+      // Don't show error if request was aborted (expected behavior)
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
       slotsContainer.innerHTML = `<div class="kb-error">Error al cargar horarios: ${(error as Error).message}</div>`;
     } finally {
       this.loading = false;
@@ -270,6 +293,12 @@ export class DateTimePicker {
   }
 
   destroy(): void {
+    // Cancel any pending requests
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+
     if (this.container) {
       this.container.remove();
       this.container = null;

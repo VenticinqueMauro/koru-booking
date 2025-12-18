@@ -13,6 +13,7 @@ export interface BookingWidgetConfig extends WidgetConfig {
   triggerPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   offsetX?: number;
   offsetY?: number;
+  layout?: 'list' | 'grid' | 'button';
 }
 
 type Step = 'service' | 'datetime' | 'form' | 'confirmation';
@@ -310,7 +311,7 @@ export class BookingWidget extends KoruWidget {
         this.serviceSelector = new ServiceSelector({
           services: this.services,
           accentColor,
-          layout: 'list', // Layout is now managed from backoffice, hardcoded to 'list'
+          layout: config.layout || 'list',
           onSelect: (service) => this.handleServiceSelect(service, config),
         });
         this.serviceSelector.render(stepContainer);
@@ -344,11 +345,12 @@ export class BookingWidget extends KoruWidget {
         break;
 
       case 'confirmation':
-        if (this.bookingResult) {
+        if (this.bookingResult && this.selectedService) {
           this.confirmation = new Confirmation({
             booking: this.bookingResult,
             accentColor,
             onClose: () => this.resetWidget(config),
+            serviceDuration: this.selectedService.duration,
           });
           this.confirmation.render(stepContainer);
         }
@@ -410,7 +412,7 @@ export class BookingWidget extends KoruWidget {
       this.goToStep('confirmation', config);
     } catch (error) {
       this.log('Error creating booking', error);
-      this.showError((error as Error).message);
+      this.showError((error as Error).message, () => this.goToStep('form', config));
     }
   }
 
@@ -450,30 +452,52 @@ export class BookingWidget extends KoruWidget {
     `;
   }
 
-  private showError(message: string): void {
+  private showError(message: string, onClose?: () => void): void {
     if (!this.widgetContainer) return;
+
+    this.widgetContainer.innerHTML = '';
+
+    const errorContainer = this.createElement('div', {
+      style: {
+        padding: '60px 20px',
+        textAlign: 'center',
+        minHeight: '400px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      } as any,
+    });
 
     const errorDiv = this.createElement('div', {
       className: 'kb-error-message',
       style: {
         padding: '20px',
-        backgroundColor: '#fee',
-        border: '1px solid #fcc',
+        backgroundColor: '#fee2e2',
+        border: '1px solid #fca5a5',
         borderRadius: '8px',
-        color: '#c33',
-        textAlign: 'center',
+        color: '#991b1b',
+        marginBottom: '20px',
+        maxWidth: '400px',
       } as any,
     });
     errorDiv.textContent = message;
+    errorContainer.appendChild(errorDiv);
 
-    this.widgetContainer.innerHTML = '';
-    this.widgetContainer.appendChild(errorDiv);
-
-    setTimeout(() => {
-      if (this.config) {
+    const closeButton = this.createElement('button', {
+      className: 'kb-button-secondary',
+      textContent: 'Volver a intentar',
+    });
+    closeButton.onclick = () => {
+      if (onClose) {
+        onClose();
+      } else if (this.config) {
         this.goToStep(this.currentStep, this.config as BookingWidgetConfig);
       }
-    }, 3000);
+    };
+    errorContainer.appendChild(closeButton);
+
+    this.widgetContainer.appendChild(errorContainer);
   }
 
   async onDestroy(): Promise<void> {

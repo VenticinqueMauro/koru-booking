@@ -5,6 +5,7 @@ export interface ConfirmationOptions {
   booking: BookingResponse;
   accentColor: string;
   onClose: () => void;
+  serviceDuration: number;
 }
 
 export class Confirmation {
@@ -106,9 +107,9 @@ export class Confirmation {
   }
 
   private generateCalendarLink(): string {
-    const { booking } = this.options;
+    const { booking, serviceDuration } = this.options;
     const startDate = new Date(`${booking.date}T${booking.time}:00`);
-    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hora por defecto
+    const endDate = new Date(startDate.getTime() + serviceDuration * 60 * 1000);
 
     const formatDateForCalendar = (date: Date): string => {
       return date.toISOString().replace(/-|:|\.\d+/g, '');

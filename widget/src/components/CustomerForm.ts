@@ -108,6 +108,7 @@ export class CustomerForm {
     // Campo: Notas
     const notesGroup = document.createElement('div');
     notesGroup.className = 'kb-form-group';
+    notesGroup.setAttribute('data-field', 'notes');
 
     const notesLabel = document.createElement('label');
     notesLabel.className = 'kb-form-label';
@@ -152,6 +153,7 @@ export class CustomerForm {
   ): HTMLElement {
     const group = document.createElement('div');
     group.className = 'kb-form-group';
+    group.setAttribute('data-field', name);
 
     const labelEl = document.createElement('label');
     labelEl.className = 'kb-form-label';
@@ -181,21 +183,21 @@ export class CustomerForm {
     let isValid = true;
 
     // Validar nombre
-    const nameGroup = this.container?.querySelector('.kb-form-group:nth-child(1)');
+    const nameGroup = this.container?.querySelector('[data-field="name"]');
     if (nameGroup && !validateName(this.formData.name)) {
       this.showError(nameGroup as HTMLElement, ValidationMessages.name);
       isValid = false;
     }
 
     // Validar email
-    const emailGroup = this.container?.querySelector('.kb-form-group:nth-child(2)');
+    const emailGroup = this.container?.querySelector('[data-field="email"]');
     if (emailGroup && !validateEmail(this.formData.email)) {
       this.showError(emailGroup as HTMLElement, ValidationMessages.email);
       isValid = false;
     }
 
     // Validar teléfono (si se proporcionó)
-    const phoneGroup = this.container?.querySelector('.kb-form-group:nth-child(3)');
+    const phoneGroup = this.container?.querySelector('[data-field="phone"]');
     if (phoneGroup && this.formData.phone && !validatePhone(this.formData.phone)) {
       this.showError(phoneGroup as HTMLElement, ValidationMessages.phone);
       isValid = false;

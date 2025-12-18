@@ -90,11 +90,12 @@ export class APIClient {
   /**
    * Obtiene los slots disponibles para un servicio en una fecha
    */
-  async getSlots(serviceId: string, date: string): Promise<string[]> {
+  async getSlots(serviceId: string, date: string, signal?: AbortSignal): Promise<string[]> {
     const response = await fetch(
       `${this.baseURL}/api/slots?serviceId=${serviceId}&date=${date}`,
       {
         headers: this.getHeaders(),
+        signal,
       }
     );
 
