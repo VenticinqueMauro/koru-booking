@@ -78,8 +78,11 @@ export class BookingWidget extends KoruWidget {
    */
   async start(): Promise<void> {
     console.log('🚀 BookingWidget.start() called');
-    const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    console.log('isDev:', isDev);
+    // Check if running in development or standalone mode (Netlify demo)
+    const isDev = window.location.hostname === 'localhost' ||
+                  window.location.hostname === '127.0.0.1' ||
+                  window.location.hostname.includes('netlify.app');
+    console.log('isDev/standalone:', isDev);
 
     // Get credentials from script tag
     const credentials = this.getCredentialsFromScriptTag();
@@ -99,12 +102,13 @@ export class BookingWidget extends KoruWidget {
       this.apiClient = createApiClient();
     }
 
+    // Use standalone mode for dev and Netlify (bypass Koru SDK)
     if (isDev) {
-      this.log('🚀 Development mode detected: Bypassing Koru SDK auth');
+      this.log('🚀 Standalone mode detected: Bypassing Koru SDK auth');
 
       const mockConfig: BookingWidgetConfig = {
         accentColor: '#0d9488',
-        displayMode: 'modal', // Cambiar a 'inline' para modo embebido
+        displayMode: 'inline', // Changed to inline for Netlify demo
         triggerText: 'Reservar cita',
         triggerPosition: 'bottom-right',
         offsetX: 24,
@@ -118,12 +122,12 @@ export class BookingWidget extends KoruWidget {
         await this.onRender(mockConfig);
         console.log('onRender completed');
       } catch (error) {
-        console.error('Error starting widget in dev mode:', error);
+        console.error('Error starting widget in standalone mode:', error);
       }
       return;
     }
 
-    // En producción, usar el método start() del SDK de Koru
+    // En producción embedded, usar el método start() del SDK de Koru
     console.log('🚀 Production mode: Using Koru SDK authentication');
     try {
       await super.start();
