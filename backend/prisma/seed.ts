@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { accountInitService } from '../src/services/accountInitService.js';
 
 const prisma = new PrismaClient();
 
@@ -12,6 +13,19 @@ async function main() {
   await prisma.widgetSettings.deleteMany();
   await prisma.schedule.deleteMany();
   await prisma.service.deleteMany();
+  await prisma.account.deleteMany();
+  console.log('');
+
+  // Create Account with proper initialization service
+  console.log('🏢 Creating demo account with accountInitService...');
+  const account = await accountInitService.createAndInitializeAccount(
+    'demo-website-123',
+    'koru-app-booking',
+    {
+      businessName: 'Demo Business',
+      email: 'admin@demo.com',
+    }
+  );
   console.log('');
 
   // Seed Services
@@ -19,6 +33,7 @@ async function main() {
   const services = await Promise.all([
     prisma.service.create({
       data: {
+        accountId: account.id,
         name: 'Corte de Cabello',
         duration: 30,
         price: 250,
@@ -28,6 +43,7 @@ async function main() {
     }),
     prisma.service.create({
       data: {
+        accountId: account.id,
         name: 'Masaje Relajante',
         duration: 60,
         price: 450,
@@ -37,6 +53,7 @@ async function main() {
     }),
     prisma.service.create({
       data: {
+        accountId: account.id,
         name: 'Consulta Médica',
         duration: 45,
         price: 500,
@@ -46,6 +63,7 @@ async function main() {
     }),
     prisma.service.create({
       data: {
+        accountId: account.id,
         name: 'Terapia Física',
         duration: 50,
         price: 400,
@@ -57,98 +75,8 @@ async function main() {
   console.log(`✓ Created ${services.length} services`);
   console.log('');
 
-  // Seed Schedule (Lunes a Viernes 9:00-18:00, con break 13:00-14:00)
-  console.log('📅 Creating schedules...');
-  const schedules = await Promise.all([
-    // Domingo (0) - Cerrado
-    prisma.schedule.create({
-      data: {
-        dayOfWeek: 0,
-        enabled: false,
-        startTime: '09:00',
-        endTime: '18:00',
-      },
-    }),
-    // Lunes (1) - Abierto
-    prisma.schedule.create({
-      data: {
-        dayOfWeek: 1,
-        enabled: true,
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-      },
-    }),
-    // Martes (2) - Abierto
-    prisma.schedule.create({
-      data: {
-        dayOfWeek: 2,
-        enabled: true,
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-      },
-    }),
-    // Miércoles (3) - Abierto
-    prisma.schedule.create({
-      data: {
-        dayOfWeek: 3,
-        enabled: true,
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-      },
-    }),
-    // Jueves (4) - Abierto
-    prisma.schedule.create({
-      data: {
-        dayOfWeek: 4,
-        enabled: true,
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-      },
-    }),
-    // Viernes (5) - Abierto
-    prisma.schedule.create({
-      data: {
-        dayOfWeek: 5,
-        enabled: true,
-        startTime: '09:00',
-        endTime: '18:00',
-        breakStart: '13:00',
-        breakEnd: '14:00',
-      },
-    }),
-    // Sábado (6) - Cerrado
-    prisma.schedule.create({
-      data: {
-        dayOfWeek: 6,
-        enabled: false,
-        startTime: '09:00',
-        endTime: '18:00',
-      },
-    }),
-  ]);
-  console.log(`✓ Created ${schedules.length} schedules`);
-  console.log('');
-
-  // Seed Widget Settings
-  console.log('⚙️  Creating widget settings...');
-  const settings = await prisma.widgetSettings.create({
-    data: {
-      layout: 'list',
-      stepInterval: 30,
-      accentColor: '#00C896',
-      notifyEmail: 'admin@tu-dominio.com',
-      timezone: 'America/Mexico_City',
-    },
-  });
-  console.log('✓ Created widget settings');
+  // NOTE: Schedule and WidgetSettings were already created by accountInitService
+  console.log('ℹ️  Schedule and Widget Settings already initialized by accountInitService');
   console.log('');
 
   // Optional: Seed sample bookings (comentar si no quieres datos de prueba)
@@ -162,6 +90,7 @@ async function main() {
   await Promise.all([
     prisma.booking.create({
       data: {
+        accountId: account.id,
         serviceId: services[0].id,
         customerName: 'Juan Pérez',
         customerEmail: 'juan.perez@example.com',
@@ -174,6 +103,7 @@ async function main() {
     }),
     prisma.booking.create({
       data: {
+        accountId: account.id,
         serviceId: services[1].id,
         customerName: 'María García',
         customerEmail: 'maria.garcia@example.com',
@@ -191,10 +121,17 @@ async function main() {
   console.log('✅ Seed completed successfully!');
   console.log('');
   console.log('Summary:');
+  console.log(`  • Account: ${account.websiteId}`);
   console.log(`  • Services: ${services.length}`);
-  console.log(`  • Schedules: ${schedules.length}`);
-  console.log(`  • Widget Settings: 1`);
+  console.log(`  • Schedules: 7 (auto-created)`);
+  console.log(`  • Widget Settings: 1 (auto-created)`);
   console.log(`  • Sample Bookings: 2`);
+  console.log('');
+  console.log('🔑 Important: Save these credentials for testing:');
+  console.log(`   Account ID: ${account.id}`);
+  console.log(`   Website ID: ${account.websiteId}`);
+  console.log(`   App ID: ${account.appId}`);
+  console.log(`   Timezone: America/Argentina/Buenos_Aires`);
   console.log('');
 }
 

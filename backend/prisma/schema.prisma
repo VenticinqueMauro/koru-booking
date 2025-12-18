@@ -138,7 +138,7 @@ model WidgetSettings {
   stepInterval Int      @default(30) // minutos
   accentColor  String   @default("#00C896")
   notifyEmail  String
-  timezone     String   @default("America/Mexico_City")
+  timezone     String   @default("America/Argentina/Buenos_Aires")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

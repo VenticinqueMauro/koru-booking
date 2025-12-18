@@ -39,7 +39,7 @@ export const UpdateWidgetSettingsSchema = z.object({
   stepInterval: z.number().int().positive().default(30),
   accentColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Color hexadecimal inválido').default('#00C896'),
   notifyEmail: z.string().email(),
-  timezone: z.string().default('America/Mexico_City'),
+  timezone: z.string().default('America/Argentina/Buenos_Aires'),
 });
 
 export const GetSlotsQuerySchema = z.object({

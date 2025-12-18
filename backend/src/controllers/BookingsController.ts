@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { parseISO } from 'date-fns';
 import { prisma } from '../utils/database.js';
 import { CreateBookingSchema } from '../models/types.js';
 import { conflictValidator } from '../services/ConflictValidator.js';
@@ -19,7 +20,7 @@ export class BookingsController {
       const bookings = await prisma.booking.findMany({
         where: {
           accountId: req.accountId,
-          ...(date && { date: new Date(date as string) }),
+          ...(date && { date: parseISO(date as string) }),
           ...(status && { status: status as string }),
         },
         include: {

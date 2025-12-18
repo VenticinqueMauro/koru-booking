@@ -53,7 +53,7 @@ export class AccountInitService {
                 stepInterval: 30,
                 accentColor,
                 notifyEmail,
-                timezone: 'America/Mexico_City',
+                timezone: 'America/Argentina/Buenos_Aires',
             },
         });
 

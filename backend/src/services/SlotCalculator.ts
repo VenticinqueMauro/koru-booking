@@ -12,7 +12,7 @@ export class SlotCalculator {
    * 4. Filtrar slots ocupados y pasados
    * 5. Aplicar buffer post-servicio
    */
-  async calculateAvailableSlots(accountId: string, serviceId: string, dateString: string): Promise<string[]> {
+  async calculateAvailableSlots(accountId: string, serviceId: string, dateString: string, stepInterval?: number): Promise<string[]> {
     // 1. Obtener el servicio (scoped by account)
     const service = await prisma.service.findFirst({
       where: {
@@ -26,6 +26,8 @@ export class SlotCalculator {
     }
 
     // 2. Obtener el día de la semana (0 = Domingo, 6 = Sábado)
+    // NOTA: parseISO interpreta la fecha en la timezone local del servidor
+    // TODO: Usar date-fns-tz para manejar timezone correctamente desde WidgetSettings
     const date = parseISO(dateString);
     const dayOfWeek = date.getDay();
 
@@ -41,7 +43,10 @@ export class SlotCalculator {
       return []; // No hay horario disponible para este día
     }
 
-    // 4. Obtener todas las reservas existentes para esa fecha (scoped by account)
+    // 4. Obtener configuración del widget si no se proporciona stepInterval
+    const interval = stepInterval ?? (await this.getStepInterval(accountId));
+
+    // 5. Obtener todas las reservas existentes para esa fecha (scoped by account)
     const existingBookings = await prisma.booking.findMany({
       where: {
         accountId: accountId,
@@ -60,16 +65,17 @@ export class SlotCalculator {
       },
     });
 
-    // 5. Generar todos los slots posibles
+    // 6. Generar todos los slots posibles
     const allSlots = this.generateTimeSlots(
       schedule.startTime,
       schedule.endTime,
       service.duration,
+      interval,
       schedule.breakStart,
       schedule.breakEnd
     );
 
-    // 6. Filtrar slots ocupados
+    // 7. Filtrar slots ocupados
     const occupiedSlots = new Set<string>();
 
     existingBookings.forEach((booking) => {
@@ -91,7 +97,9 @@ export class SlotCalculator {
       });
     });
 
-    // 7. Filtrar slots pasados (si la fecha es hoy)
+    // 8. Filtrar slots pasados (si la fecha es hoy)
+    // NOTA: 'now' usa la timezone del servidor
+    // TODO: Obtener timezone de WidgetSettings y usar date-fns-tz para comparación correcta
     const now = new Date();
     const isToday = format(now, 'yyyy-MM-dd') === dateString;
 
@@ -117,12 +125,36 @@ export class SlotCalculator {
   }
 
   /**
+   * Obtiene el stepInterval configurado para el account
+   */
+  private async getStepInterval(accountId: string): Promise<number> {
+    const settings = await prisma.widgetSettings.findUnique({
+      where: { accountId },
+      select: { stepInterval: true },
+    });
+    return settings?.stepInterval ?? 30;
+  }
+
+  /**
+   * Obtiene el timezone configurado para el account
+   * TODO: Usar este timezone en los cálculos de slots con date-fns-tz
+   */
+  private async getTimezone(accountId: string): Promise<string> {
+    const settings = await prisma.widgetSettings.findUnique({
+      where: { accountId },
+      select: { timezone: true },
+    });
+    return settings?.timezone ?? 'America/Argentina/Buenos_Aires';
+  }
+
+  /**
    * Genera slots de tiempo entre un rango con pausas opcionales
    */
   private generateTimeSlots(
     startTime: string,
     endTime: string,
     durationMinutes: number,
+    stepInterval: number,
     breakStart?: string | null,
     breakEnd?: string | null
   ): string[] {
@@ -154,8 +186,8 @@ export class SlotCalculator {
         slots.push(timeString);
       }
 
-      // Avanzar al siguiente slot (cada 15 minutos para mostrar más opciones)
-      current = addMinutes(current, 15);
+      // Avanzar al siguiente slot usando el intervalo configurado
+      current = addMinutes(current, stepInterval);
     }
 
     return slots;
