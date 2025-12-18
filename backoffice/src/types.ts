@@ -66,7 +66,7 @@ export interface CreateBookingInput {
 
 export interface WidgetSettings {
     id: string;
-    layout: 'list' | 'grid' | 'button' | 'compact';
+    layout: 'list' | 'grid' | 'button';
     stepInterval: number;
     accentColor: string;
     notifyEmail: string;
@@ -76,7 +76,7 @@ export interface WidgetSettings {
 }
 
 export interface UpdateWidgetSettingsInput {
-    layout: 'list' | 'grid' | 'button' | 'compact';
+    layout: 'list' | 'grid' | 'button';
     stepInterval: number;
     accentColor: string;
     notifyEmail: string;

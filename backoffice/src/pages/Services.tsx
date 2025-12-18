@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { servicesApi } from '../api/services';
 import { Service, CreateServiceInput } from '../types';
 import { Layout } from '../components/Layout';
@@ -25,6 +26,10 @@ export default function Services() {
     mutationFn: servicesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
+      toast.success('Servicio eliminado correctamente');
+    },
+    onError: () => {
+      toast.error('Error al eliminar el servicio');
     },
   });
 
@@ -174,7 +179,11 @@ function ServiceForm({ service, onCancel, onSuccess }: { service: Service | null
       return servicesApi.create(data);
     },
     onSuccess: () => {
+      toast.success(service ? 'Servicio actualizado correctamente' : 'Servicio creado correctamente');
       onSuccess();
+    },
+    onError: () => {
+      toast.error('Error al guardar el servicio');
     },
   });
 
@@ -222,6 +231,7 @@ function ServiceForm({ service, onCancel, onSuccess }: { service: Service | null
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
                 min="0"
+                step="0.01"
               />
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { bookingsApi } from '../api/bookings';
 import { Booking } from '../types';
 import { format, parseISO } from 'date-fns';
@@ -29,6 +30,10 @@ export default function Bookings() {
     mutationFn: bookingsApi.cancel,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      toast.success('Reserva cancelada correctamente');
+    },
+    onError: () => {
+      toast.error('Error al cancelar la reserva');
     },
   });
 

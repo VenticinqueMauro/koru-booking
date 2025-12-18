@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { schedulesApi } from '../api/schedules';
 import { Schedule, CreateScheduleInput } from '../types';
 import { Layout } from '../components/Layout';
@@ -31,7 +32,10 @@ export default function SchedulePage() {
     mutationFn: schedulesApi.update,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
-      // Optional: Show toast
+      toast.success('Horario guardado correctamente');
+    },
+    onError: () => {
+      toast.error('Error al guardar el horario');
     },
   });
 
@@ -113,6 +117,32 @@ function DayScheduleRow({ label, dayValue, currentSchedule, onSave, isSaving }: 
   const [breakEnd, setBreakEnd] = useState(currentSchedule.breakEnd || '');
 
   const handleSave = () => {
+    // Validación: startTime debe ser menor que endTime
+    if (startTime >= endTime) {
+      toast.error('La hora de inicio debe ser menor que la hora de fin');
+      return;
+    }
+
+    // Validación: si hay break, ambos campos deben estar presentes
+    if ((breakStart && !breakEnd) || (!breakStart && breakEnd)) {
+      toast.error('Debes especificar tanto la hora de inicio como la de fin del descanso');
+      return;
+    }
+
+    // Validación: si hay break, breakStart debe ser menor que breakEnd
+    if (breakStart && breakEnd && breakStart >= breakEnd) {
+      toast.error('La hora de inicio del descanso debe ser menor que la hora de fin');
+      return;
+    }
+
+    // Validación: el break debe estar dentro del horario laboral
+    if (breakStart && breakEnd) {
+      if (breakStart < startTime || breakEnd > endTime) {
+        toast.error('El descanso debe estar dentro del horario laboral');
+        return;
+      }
+    }
+
     onSave({
       dayOfWeek: dayValue,
       enabled,

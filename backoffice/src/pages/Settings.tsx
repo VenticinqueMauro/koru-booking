@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { settingsApi } from '../api/settings';
-import { UpdateWidgetSettingsInput, WidgetSettings } from '../types';
+import { UpdateWidgetSettingsInput } from '../types';
 import { Layout } from '../components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -33,14 +34,12 @@ export default function Settings() {
 
   useEffect(() => {
     if (response) {
-      // Asumimos que response es directamente el objeto settings o tiene data
-      const settings = (response as any).data || response as unknown as WidgetSettings;
       setFormData({
-        layout: settings.layout || 'list',
-        stepInterval: settings.stepInterval || 30,
-        accentColor: settings.accentColor || '#00C896',
-        notifyEmail: settings.notifyEmail || '',
-        timezone: settings.timezone || 'America/Mexico_City',
+        layout: response.layout || 'list',
+        stepInterval: response.stepInterval || 30,
+        accentColor: response.accentColor || '#00C896',
+        notifyEmail: response.notifyEmail || '',
+        timezone: response.timezone || 'America/Mexico_City',
       });
     }
   }, [response]);
@@ -49,11 +48,10 @@ export default function Settings() {
     mutationFn: settingsApi.update,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
-      // Suggestion: Use a proper toast notification here
-      alert('Configuración guardada correctamente');
+      toast.success('Configuración guardada correctamente');
     },
     onError: () => {
-      alert('Error al guardar la configuración');
+      toast.error('Error al guardar la configuración');
     }
   });
 
@@ -117,7 +115,7 @@ export default function Settings() {
                       <SelectContent>
                         <SelectItem value="list">Lista</SelectItem>
                         <SelectItem value="grid">Cuadrícula</SelectItem>
-                        <SelectItem value="compact">Compacto</SelectItem>
+                        <SelectItem value="button">Botón</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">Cómo se mostrarán los servicios en el widget.</p>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { superAdminApi } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -94,9 +95,10 @@ const SuperAdminDashboard: React.FC = () => {
         try {
             await superAdminApi.updateAccount(editingAccount.id, formData);
             await loadData();
+            toast.success('Cuenta actualizada correctamente');
             handleCloseModal();
         } catch (err: any) {
-            alert(err.message || 'Error updating account');
+            toast.error(err.message || 'Error al actualizar la cuenta');
         } finally {
             setIsSaving(false);
         }
