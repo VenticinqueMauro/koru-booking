@@ -109,34 +109,71 @@ export class UserSyncService {
                     }
                 );
             } else if (role !== 'admin') {
-                // For non-admin users without websiteId/appId, try to find existing account by user
-                console.log(`⚠️  No websiteId/appId found for user ${koruUserId}. Looking for existing account.`);
+                // For non-admin users without websiteId/appId, try multiple strategies
+                console.log(`⚠️  No websiteId/appId found for user ${koruUserId}. Looking for existing mapping.`);
 
-                // Check if user already exists and has an account
-                const existingUser = await prisma.user.findUnique({
+                // Strategy 1: Check UserWebsiteMapping table
+                const mapping = await prisma.userWebsiteMapping.findUnique({
                     where: { koruUserId },
-                    include: { account: true },
                 });
 
-                if (existingUser?.account) {
-                    // Use existing account
-                    account = existingUser.account;
-                    console.log(`✅ Found existing account for user ${koruUserId}: ${account.id}`);
-                } else {
-                    // Only create default account if user doesn't exist or has no account
-                    console.log(`⚠️  No existing account found for user ${koruUserId}. Creating default account.`);
-                    const defaultWebsiteId = `koru-user-${koruUserId}`;
-                    const defaultAppId = this.koruAppId || 'default-app';
+                if (mapping) {
+                    console.log(`✅ Found mapping for user ${koruUserId}: websiteId=${mapping.websiteId}`);
+                    websiteId = mapping.websiteId;
+                    appId = mapping.appId;
 
+                    // Find or create account with mapped websiteId
                     account = await accountInitService.findOrCreateAccount(
-                        defaultWebsiteId,
-                        defaultAppId,
+                        websiteId,
+                        appId,
                         {
                             businessName: name || email,
                             email: email,
                             config: {},
                         }
                     );
+                } else {
+                    // Strategy 2: Check if user already exists and has an account
+                    const existingUser = await prisma.user.findUnique({
+                        where: { koruUserId },
+                        include: { account: true },
+                    });
+
+                    if (existingUser?.account) {
+                        // Use existing account and create mapping for future logins
+                        account = existingUser.account;
+                        console.log(`✅ Found existing account for user ${koruUserId}: ${account.id}`);
+
+                        // Create mapping to speed up future logins
+                        await prisma.userWebsiteMapping.upsert({
+                            where: { koruUserId },
+                            update: {
+                                websiteId: account.websiteId,
+                                appId: account.appId,
+                            },
+                            create: {
+                                koruUserId,
+                                websiteId: account.websiteId,
+                                appId: account.appId,
+                            },
+                        });
+                        console.log(`✅ Created mapping for future logins: ${koruUserId} → ${account.websiteId}`);
+                    } else {
+                        // Strategy 3: Create default account (last resort)
+                        console.log(`⚠️  No existing account or mapping found for user ${koruUserId}. Creating default account.`);
+                        const defaultWebsiteId = `koru-user-${koruUserId}`;
+                        const defaultAppId = this.koruAppId || 'default-app';
+
+                        account = await accountInitService.findOrCreateAccount(
+                            defaultWebsiteId,
+                            defaultAppId,
+                            {
+                                businessName: name || email,
+                                email: email,
+                                config: {},
+                            }
+                        );
+                    }
                 }
             }
             // For admins without websiteId/appId, account remains null

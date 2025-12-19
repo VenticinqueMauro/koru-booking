@@ -142,3 +142,15 @@ model WidgetSettings {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model UserWebsiteMapping {
+  id          String   @id @default(uuid())
+  koruUserId  String   @unique  // Maps Koru user to their website
+  websiteId   String              // Website ID from Koru
+  appId       String              // App ID (Koru Booking)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([koruUserId])
+  @@index([websiteId])
+}
