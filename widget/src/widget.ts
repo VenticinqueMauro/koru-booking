@@ -86,6 +86,7 @@ export class BookingWidget extends KoruWidget {
 
     // Get credentials from script tag
     const credentials = this.getCredentialsFromScriptTag();
+    console.log('🔑 Credentials from script tag:', credentials);
 
     if (!credentials && !isDev) {
       console.error('❌ Koru credentials not found in script tag');
@@ -94,11 +95,11 @@ export class BookingWidget extends KoruWidget {
 
     // Initialize API client with credentials
     if (credentials) {
-      this.log('🔑 Koru credentials loaded:', { websiteId: credentials.websiteId });
+      console.log('✅ Koru credentials loaded - websiteId:', credentials.websiteId, 'appId:', credentials.appId);
       this.apiClient = createApiClient(undefined, credentials);
     } else {
       // Development mode without credentials
-      this.log('⚠️ Development mode: No credentials provided');
+      console.warn('⚠️ Development mode: No credentials provided - API calls will fail authentication');
       this.apiClient = createApiClient();
     }
 

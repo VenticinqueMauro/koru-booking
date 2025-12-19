@@ -11,9 +11,12 @@ export class ServicesController {
   async getAll(req: DualAuthRequest, res: Response): Promise<void> {
     try {
       if (!req.accountId) {
+        console.error('❌ [Services] No accountId in request');
         res.status(401).json({ error: 'Authentication required' });
         return;
       }
+
+      console.log(`🔍 [Services] Fetching services for accountId: ${req.accountId}`);
 
       const services = await prisma.service.findMany({
         where: {
@@ -23,9 +26,11 @@ export class ServicesController {
         orderBy: { name: 'asc' },
       });
 
+      console.log(`✅ [Services] Found ${services.length} active services for accountId: ${req.accountId}`);
+
       res.json(services);
     } catch (error) {
-      console.error('Error fetching services:', error);
+      console.error('❌ [Services] Error fetching services:', error);
       res.status(500).json({ error: 'Error al cargar servicios' });
     }
   }

@@ -109,20 +109,35 @@ export class UserSyncService {
                     }
                 );
             } else if (role !== 'admin') {
-                // For non-admin users without websiteId/appId, create a default account based on their Koru user ID
-                console.log(`⚠️  No websiteId/appId found for user ${koruUserId}. Creating default account.`);
-                const defaultWebsiteId = `koru-user-${koruUserId}`;
-                const defaultAppId = this.koruAppId || 'default-app';
+                // For non-admin users without websiteId/appId, try to find existing account by user
+                console.log(`⚠️  No websiteId/appId found for user ${koruUserId}. Looking for existing account.`);
 
-                account = await accountInitService.findOrCreateAccount(
-                    defaultWebsiteId,
-                    defaultAppId,
-                    {
-                        businessName: name || email,
-                        email: email,
-                        config: {},
-                    }
-                );
+                // Check if user already exists and has an account
+                const existingUser = await prisma.user.findUnique({
+                    where: { koruUserId },
+                    include: { account: true },
+                });
+
+                if (existingUser?.account) {
+                    // Use existing account
+                    account = existingUser.account;
+                    console.log(`✅ Found existing account for user ${koruUserId}: ${account.id}`);
+                } else {
+                    // Only create default account if user doesn't exist or has no account
+                    console.log(`⚠️  No existing account found for user ${koruUserId}. Creating default account.`);
+                    const defaultWebsiteId = `koru-user-${koruUserId}`;
+                    const defaultAppId = this.koruAppId || 'default-app';
+
+                    account = await accountInitService.findOrCreateAccount(
+                        defaultWebsiteId,
+                        defaultAppId,
+                        {
+                            businessName: name || email,
+                            email: email,
+                            config: {},
+                        }
+                    );
+                }
             }
             // For admins without websiteId/appId, account remains null
 

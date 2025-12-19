@@ -68,6 +68,12 @@ export class APIClient {
     if (this.credentials) {
       headers['X-Koru-Website-Id'] = this.credentials.websiteId;
       headers['X-Koru-App-Id'] = this.credentials.appId;
+      console.log('📤 [API Client] Sending Koru headers:', {
+        websiteId: this.credentials.websiteId,
+        appId: this.credentials.appId
+      });
+    } else {
+      console.warn('⚠️ [API Client] No credentials set - requests will not include Koru headers');
     }
 
     return headers;

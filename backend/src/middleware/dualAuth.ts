@@ -49,13 +49,18 @@ export const dualAuthMiddleware = async (
 
         // Try Koru credentials (widget)
         if (websiteId && appId) {
+            console.log(`🔍 [Koru Auth] Verifying credentials - websiteId: ${websiteId}, appId: ${appId}`);
+
             // Verify credentials with Koru API
             const koruResponse = await koruService.verifyCredentials({ websiteId, appId });
 
             if (!koruResponse || !koruResponse.authorized) {
+                console.error(`❌ [Koru Auth] Verification failed - websiteId: ${websiteId}`);
                 res.status(401).json({ error: 'Invalid Koru credentials' });
                 return;
             }
+
+            console.log(`✅ [Koru Auth] Credentials verified - authorized: true`);
 
             // Find or create account automatically
             let account = await prisma.account.findUnique({
@@ -63,7 +68,7 @@ export const dualAuthMiddleware = async (
             });
 
             if (!account) {
-                console.log(`🆕 Auto-creating Account for widget (websiteId: ${websiteId})`);
+                console.log(`🆕 [Koru Auth] Auto-creating Account for widget (websiteId: ${websiteId})`);
 
                 // Auto-create account with data from Koru API response
                 account = await accountInitService.createAndInitializeAccount(
@@ -77,14 +82,18 @@ export const dualAuthMiddleware = async (
                 );
 
                 if (!account) {
+                    console.error(`❌ [Koru Auth] Failed to create account`);
                     res.status(500).json({ error: 'Failed to create account' });
                     return;
                 }
 
-                console.log(`✅ Account auto-created successfully: ${account.id}`);
+                console.log(`✅ [Koru Auth] Account auto-created - accountId: ${account.id}`);
             } else {
+                console.log(`✅ [Koru Auth] Account found - accountId: ${account.id}`);
+
                 // Verify appId matches
                 if (account.appId !== appId) {
+                    console.error(`❌ [Koru Auth] AppId mismatch - expected: ${account.appId}, received: ${appId}`);
                     res.status(401).json({ error: 'Invalid app_id for this account' });
                     return;
                 }
@@ -92,9 +101,12 @@ export const dualAuthMiddleware = async (
 
             // TypeScript null check (should never happen after the above logic)
             if (!account) {
+                console.error(`❌ [Koru Auth] Account is null after creation/lookup`);
                 res.status(500).json({ error: 'Failed to create or find account' });
                 return;
             }
+
+            console.log(`✅ [Koru Auth] Request authenticated - accountId: ${account.id}, websiteId: ${account.websiteId}`);
 
             req.accountId = account.id;
             req.websiteId = account.websiteId;
