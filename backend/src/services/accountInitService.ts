@@ -33,6 +33,27 @@ export class AccountInitService {
     }
 
     /**
+     * Initialize default services for new account
+     */
+    async initializeDefaultServices(accountId: string): Promise<void> {
+        const defaultServices = [
+            { name: 'Consulta General', duration: 30, price: 50, buffer: 5 },
+            { name: 'Consulta Extendida', duration: 60, price: 80, buffer: 10 },
+            { name: 'Primera Consulta', duration: 45, price: 0, buffer: 5 },
+        ];
+
+        await prisma.service.createMany({
+            data: defaultServices.map((service) => ({
+                ...service,
+                accountId,
+                active: true,
+            })),
+        });
+
+        console.log(`✅ Initialized default services for Account: ${accountId}`);
+    }
+
+    /**
      * Initialize default widget settings for new account
      */
     async initializeWidgetSettings(
@@ -90,6 +111,9 @@ export class AccountInitService {
 
         // Initialize schedule
         await this.initializeDefaultSchedule(account.id);
+
+        // Initialize default services
+        await this.initializeDefaultServices(account.id);
 
         // Initialize widget settings with account email
         await this.initializeWidgetSettings(

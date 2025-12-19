@@ -159,20 +159,72 @@ export class UserSyncService {
                         });
                         console.log(`✅ Created mapping for future logins: ${koruUserId} → ${account.websiteId}`);
                     } else {
-                        // Strategy 3: Create default account (last resort)
-                        console.log(`⚠️  No existing account or mapping found for user ${koruUserId}. Creating default account.`);
-                        const defaultWebsiteId = `koru-user-${koruUserId}`;
-                        const defaultAppId = this.koruAppId || 'default-app';
+                        // Strategy 3: Find account by email match
+                        if (email && !email.includes('@koru.user')) {
+                            const accountByEmail = await prisma.account.findFirst({
+                                where: { email },
+                            });
 
-                        account = await accountInitService.findOrCreateAccount(
-                            defaultWebsiteId,
-                            defaultAppId,
-                            {
-                                businessName: name || email,
-                                email: email,
-                                config: {},
+                            if (accountByEmail) {
+                                account = accountByEmail;
+                                console.log(`✅ Found account by email match for ${email}: ${account.id}`);
+
+                                // Create mapping for future logins
+                                await prisma.userWebsiteMapping.create({
+                                    data: {
+                                        koruUserId,
+                                        websiteId: account.websiteId,
+                                        appId: account.appId,
+                                    },
+                                });
+                                console.log(`✅ Created mapping for future logins: ${koruUserId} → ${account.websiteId}`);
                             }
-                        );
+                        }
+
+                        // Strategy 4: If only one real account exists (not koru-user-*), use it
+                        if (!account) {
+                            const realAccounts = await prisma.account.findMany({
+                                where: {
+                                    NOT: {
+                                        websiteId: { startsWith: 'koru-user-' },
+                                    },
+                                },
+                            });
+
+                            if (realAccounts.length === 1) {
+                                account = realAccounts[0];
+                                console.log(`✅ Found single real account, linking user ${koruUserId} to: ${account.id}`);
+
+                                // Create mapping for future logins
+                                await prisma.userWebsiteMapping.create({
+                                    data: {
+                                        koruUserId,
+                                        websiteId: account.websiteId,
+                                        appId: account.appId,
+                                    },
+                                });
+                                console.log(`✅ Created mapping for future logins: ${koruUserId} → ${account.websiteId}`);
+                            } else if (realAccounts.length > 1) {
+                                console.log(`⚠️  Multiple accounts exist (${realAccounts.length}), cannot auto-link. Creating default.`);
+                            }
+                        }
+
+                        // Strategy 5: Create default account (last resort)
+                        if (!account) {
+                            console.log(`⚠️  No existing account or mapping found for user ${koruUserId}. Creating default account.`);
+                            const defaultWebsiteId = `koru-user-${koruUserId}`;
+                            const defaultAppId = this.koruAppId || 'default-app';
+
+                            account = await accountInitService.findOrCreateAccount(
+                                defaultWebsiteId,
+                                defaultAppId,
+                                {
+                                    businessName: name || email,
+                                    email: email,
+                                    config: {},
+                                }
+                            );
+                        }
                     }
                 }
             }
