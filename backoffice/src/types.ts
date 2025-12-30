@@ -66,21 +66,39 @@ export interface CreateBookingInput {
 
 export interface WidgetSettings {
     id: string;
+    // Apariencia
     layout: 'list' | 'grid' | 'button';
-    stepInterval: number;
     accentColor: string;
-    notifyEmail: string;
+    // Modo de visualización
+    displayMode: 'modal' | 'inline';
+    triggerText: string;
+    triggerPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+    offsetX: number;
+    offsetY: number;
+    // Configuración
+    stepInterval: number;
     timezone: string;
+    // Notificaciones
+    notifyEmail: string;
     createdAt?: string;
     updatedAt?: string;
 }
 
 export interface UpdateWidgetSettingsInput {
+    // Apariencia
     layout: 'list' | 'grid' | 'button';
-    stepInterval: number;
     accentColor: string;
-    notifyEmail: string;
+    // Modo de visualización
+    displayMode: 'modal' | 'inline';
+    triggerText: string;
+    triggerPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+    offsetX: number;
+    offsetY: number;
+    // Configuración
+    stepInterval: number;
     timezone: string;
+    // Notificaciones
+    notifyEmail: string;
 }
 
 export type ApiResponse<T = any> = T;

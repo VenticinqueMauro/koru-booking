@@ -133,12 +133,25 @@ model WidgetSettings {
   id           String   @id @default(uuid())
   accountId    String   @unique  // One settings per account
   account      Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  
+
+  // Apariencia
   layout       String   @default("list") // list, grid, button
-  stepInterval Int      @default(30) // minutos
   accentColor  String   @default("#00C896")
-  notifyEmail  String
+
+  // Modo de visualización
+  displayMode     String   @default("modal") // modal, inline
+  triggerText     String   @default("Reservar")
+  triggerPosition String   @default("bottom-right") // bottom-right, bottom-left, top-right, top-left
+  offsetX         Int      @default(24)
+  offsetY         Int      @default(24)
+
+  // Configuración
+  stepInterval Int      @default(30) // minutos
   timezone     String   @default("America/Argentina/Buenos_Aires")
+
+  // Notificaciones
+  notifyEmail  String
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

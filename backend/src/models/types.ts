@@ -35,11 +35,23 @@ export const CreateBookingSchema = z.object({
 });
 
 export const UpdateWidgetSettingsSchema = z.object({
+  // Apariencia
   layout: z.enum(['list', 'grid', 'button']).default('list'),
-  stepInterval: z.number().int().positive().default(30),
   accentColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Color hexadecimal inválido').default('#00C896'),
-  notifyEmail: z.string().email(),
+
+  // Modo de visualización
+  displayMode: z.enum(['modal', 'inline']).default('modal'),
+  triggerText: z.string().min(1).max(50).default('Reservar'),
+  triggerPosition: z.enum(['bottom-right', 'bottom-left', 'top-right', 'top-left']).default('bottom-right'),
+  offsetX: z.number().int().min(0).max(200).default(24),
+  offsetY: z.number().int().min(0).max(200).default(24),
+
+  // Configuración
+  stepInterval: z.number().int().positive().default(30),
   timezone: z.string().default('America/Argentina/Buenos_Aires'),
+
+  // Notificaciones
+  notifyEmail: z.string().email(),
 });
 
 export const GetSlotsQuerySchema = z.object({

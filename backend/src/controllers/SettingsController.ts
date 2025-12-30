@@ -25,11 +25,20 @@ export class SettingsController {
             if (!settings) {
                 // Si no existe, devolvemos defaults (coincidiendo con schema prisma)
                 res.json({
+                    // Apariencia
                     layout: 'list',
-                    stepInterval: 30,
                     accentColor: '#00C896',
+                    // Modo de visualización
+                    displayMode: 'modal',
+                    triggerText: 'Reservar',
+                    triggerPosition: 'bottom-right',
+                    offsetX: 24,
+                    offsetY: 24,
+                    // Configuración
+                    stepInterval: 30,
+                    timezone: 'America/Argentina/Buenos_Aires',
+                    // Notificaciones
                     notifyEmail: '',
-                    timezone: 'America/Mexico_City'
                 });
                 return;
             }

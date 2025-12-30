@@ -20,11 +20,20 @@ import { Loader2 } from 'lucide-react';
 export default function Settings() {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<UpdateWidgetSettingsInput>({
+    // Apariencia
     layout: 'list',
-    stepInterval: 30,
     accentColor: '#00C896',
+    // Modo de visualización
+    displayMode: 'modal',
+    triggerText: 'Reservar',
+    triggerPosition: 'bottom-right',
+    offsetX: 24,
+    offsetY: 24,
+    // Configuración
+    stepInterval: 30,
+    timezone: 'America/Argentina/Buenos_Aires',
+    // Notificaciones
     notifyEmail: '',
-    timezone: 'America/Mexico_City',
   });
 
   const { data: response, isLoading, error } = useQuery({
@@ -36,10 +45,15 @@ export default function Settings() {
     if (response) {
       setFormData({
         layout: response.layout || 'list',
-        stepInterval: response.stepInterval || 30,
         accentColor: response.accentColor || '#00C896',
+        displayMode: response.displayMode || 'modal',
+        triggerText: response.triggerText || 'Reservar',
+        triggerPosition: response.triggerPosition || 'bottom-right',
+        offsetX: response.offsetX ?? 24,
+        offsetY: response.offsetY ?? 24,
+        stepInterval: response.stepInterval || 30,
+        timezone: response.timezone || 'America/Argentina/Buenos_Aires',
         notifyEmail: response.notifyEmail || '',
-        timezone: response.timezone || 'America/Mexico_City',
       });
     }
   }, [response]);
@@ -56,16 +70,16 @@ export default function Settings() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'stepInterval' ? Number(value) : value
+      [name]: type === 'number' ? Number(value) : value
     }));
   };
 
-  const handleSelectChange = (value: string) => {
-    setFormData(prev => ({ ...prev, layout: value as UpdateWidgetSettingsInput['layout'] }));
-  }
+  const handleSelectChange = (name: keyof UpdateWidgetSettingsInput, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,124 +106,238 @@ export default function Settings() {
           </p>
         </header>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Ajustes Generales</CardTitle>
-            <CardDescription>Modifica la apariencia y funcionamiento de tu widget.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-8">
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Apariencia</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Diseño del Widget</Label>
-                    <Select
-                      value={formData.layout}
-                      onValueChange={handleSelectChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un diseño" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="list">Lista</SelectItem>
-                        <SelectItem value="grid">Cuadrícula</SelectItem>
-                        <SelectItem value="button">Botón</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">Cómo se mostrarán los servicios en el widget.</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="accentColor">Color de Acento</Label>
-                    <div className="flex items-center gap-3">
-                      <Input
-                        type="color"
-                        id="accentColor"
-                        name="accentColor"
-                        value={formData.accentColor}
-                        onChange={handleChange}
-                        className="w-12 h-10 p-1 cursor-pointer"
-                      />
-                      <Input
-                        type="text"
-                        name="accentColor"
-                        value={formData.accentColor}
-                        onChange={handleChange}
-                        className="font-mono"
-                        placeholder="#000000"
-                      />
-                    </div>
-                  </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Apariencia */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Apariencia</CardTitle>
+              <CardDescription>Personaliza el estilo visual del widget</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Diseño de Servicios</Label>
+                  <Select
+                    value={formData.layout}
+                    onValueChange={(value) => handleSelectChange('layout', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un diseño" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="list">Lista</SelectItem>
+                      <SelectItem value="grid">Cuadrícula</SelectItem>
+                      <SelectItem value="button">Botón</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Cómo se mostrarán los servicios</p>
                 </div>
-              </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Configuración</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="stepInterval">Intervalo de Tiempo (minutos)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="accentColor">Color de Acento</Label>
+                  <div className="flex items-center gap-3">
                     <Input
-                      id="stepInterval"
-                      type="number"
-                      name="stepInterval"
-                      value={formData.stepInterval}
+                      type="color"
+                      id="accentColor"
+                      name="accentColor"
+                      value={formData.accentColor}
                       onChange={handleChange}
+                      className="w-12 h-10 p-1 cursor-pointer"
                     />
-                    <p className="text-xs text-muted-foreground">Intervalos mostrados en la selección de hora.</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="timezone">Zona Horaria</Label>
                     <Input
-                      id="timezone"
                       type="text"
-                      name="timezone"
-                      value={formData.timezone}
-                      disabled
+                      name="accentColor"
+                      value={formData.accentColor}
+                      onChange={handleChange}
+                      className="font-mono"
+                      placeholder="#000000"
                     />
-                    <p className="text-xs text-muted-foreground">Zona horaria predeterminada.</p>
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Notificaciones</h3>
-                <div className="space-y-2 max-w-md">
-                  <Label htmlFor="notifyEmail">Email de Notificaciones</Label>
+          {/* Modo de Visualización */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Modo de Visualización</CardTitle>
+              <CardDescription>Configura cómo se muestra el widget en tu sitio</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Modo</Label>
+                  <Select
+                    value={formData.displayMode}
+                    onValueChange={(value) => handleSelectChange('displayMode', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona modo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="modal">Modal (botón flotante)</SelectItem>
+                      <SelectItem value="inline">Embebido (en página)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Modal muestra un botón flotante, Embebido se integra directamente
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="triggerText">Texto del Botón</Label>
                   <Input
-                    id="notifyEmail"
-                    type="email"
-                    name="notifyEmail"
-                    value={formData.notifyEmail}
+                    id="triggerText"
+                    type="text"
+                    name="triggerText"
+                    value={formData.triggerText}
                     onChange={handleChange}
-                    placeholder="admin@example.com"
+                    placeholder="Reservar"
+                    disabled={formData.displayMode === 'inline'}
                   />
-                  <p className="text-xs text-muted-foreground">Recibirás alertas de nuevas reservas aquí.</p>
+                  <p className="text-xs text-muted-foreground">Texto del botón flotante (solo modo modal)</p>
                 </div>
               </div>
 
-              {error && (
-                <div className="text-destructive text-sm font-medium">
-                  Error al cargar la configuración
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label>Posición del Botón</Label>
+                  <Select
+                    value={formData.triggerPosition}
+                    onValueChange={(value) => handleSelectChange('triggerPosition', value)}
+                    disabled={formData.displayMode === 'inline'}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Posición" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bottom-right">Abajo derecha</SelectItem>
+                      <SelectItem value="bottom-left">Abajo izquierda</SelectItem>
+                      <SelectItem value="top-right">Arriba derecha</SelectItem>
+                      <SelectItem value="top-left">Arriba izquierda</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
 
-              <div className="pt-4">
-                <Button
-                  type="submit"
-                  className="w-full md:w-auto"
-                  disabled={mutation.isPending}
-                >
-                  {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {mutation.isPending ? 'Guardando...' : 'Guardar Configuración'}
-                </Button>
+                <div className="space-y-2">
+                  <Label htmlFor="offsetX">Margen Horizontal (px)</Label>
+                  <Input
+                    id="offsetX"
+                    type="number"
+                    name="offsetX"
+                    value={formData.offsetX}
+                    onChange={handleChange}
+                    min={0}
+                    max={200}
+                    disabled={formData.displayMode === 'inline'}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="offsetY">Margen Vertical (px)</Label>
+                  <Input
+                    id="offsetY"
+                    type="number"
+                    name="offsetY"
+                    value={formData.offsetY}
+                    onChange={handleChange}
+                    min={0}
+                    max={200}
+                    disabled={formData.displayMode === 'inline'}
+                  />
+                </div>
               </div>
+            </CardContent>
+          </Card>
 
-            </form>
-          </CardContent>
-        </Card>
+          {/* Configuración */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuración</CardTitle>
+              <CardDescription>Ajustes de funcionamiento del widget</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="stepInterval">Intervalo de Tiempo (minutos)</Label>
+                  <Input
+                    id="stepInterval"
+                    type="number"
+                    name="stepInterval"
+                    value={formData.stepInterval}
+                    onChange={handleChange}
+                    min={5}
+                    max={120}
+                  />
+                  <p className="text-xs text-muted-foreground">Intervalos mostrados en la selección de hora</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timezone">Zona Horaria</Label>
+                  <Select
+                    value={formData.timezone}
+                    onValueChange={(value) => handleSelectChange('timezone', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona zona horaria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="America/Argentina/Buenos_Aires">Argentina (Buenos Aires)</SelectItem>
+                      <SelectItem value="America/Mexico_City">México (Ciudad de México)</SelectItem>
+                      <SelectItem value="America/Santiago">Chile (Santiago)</SelectItem>
+                      <SelectItem value="America/Bogota">Colombia (Bogotá)</SelectItem>
+                      <SelectItem value="America/Lima">Perú (Lima)</SelectItem>
+                      <SelectItem value="Europe/Madrid">España (Madrid)</SelectItem>
+                      <SelectItem value="America/New_York">Estados Unidos (Nueva York)</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Estados Unidos (Los Ángeles)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Zona horaria para los horarios de reserva</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notificaciones */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Notificaciones</CardTitle>
+              <CardDescription>Configura las alertas de nuevas reservas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-w-md">
+                <Label htmlFor="notifyEmail">Email de Notificaciones</Label>
+                <Input
+                  id="notifyEmail"
+                  type="email"
+                  name="notifyEmail"
+                  value={formData.notifyEmail}
+                  onChange={handleChange}
+                  placeholder="admin@example.com"
+                />
+                <p className="text-xs text-muted-foreground">Recibirás alertas de nuevas reservas aquí</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {error && (
+            <div className="text-destructive text-sm font-medium">
+              Error al cargar la configuración
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button
+              type="submit"
+              className="w-full md:w-auto"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {mutation.isPending ? 'Guardando...' : 'Guardar Configuración'}
+            </Button>
+          </div>
+        </form>
       </div>
     </Layout>
   );
