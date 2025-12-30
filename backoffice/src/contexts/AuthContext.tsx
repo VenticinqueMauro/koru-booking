@@ -8,6 +8,7 @@ interface AuthContextType extends AuthState {
     logout: () => void;
     isLoading: boolean;
     isAdmin: boolean; // Computed from user.role
+    hasMultipleWebsites: boolean; // True if user has access to multiple websites
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,12 +22,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         token: null,
         account: null,
         user: null,
+        availableWebsites: undefined,
         koruTokenExpiresAt: undefined,
     });
     const [isLoading, setIsLoading] = useState(true);
 
     // Compute isAdmin from user role (supports both 'admin' from Koru and legacy 'super_admin')
     const isAdmin = authState.user?.role === 'admin' || authState.user?.role === 'super_admin';
+
+    // Check if user has access to multiple websites (multi-tenant)
+    const hasMultipleWebsites = (authState.availableWebsites?.length ?? 0) > 1;
 
     // Load auth state from localStorage on mount
     useEffect(() => {
@@ -100,8 +105,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 token: response.token,
                 account: response.account || null,
                 user: response.user || null,
+                availableWebsites: response.availableWebsites,
                 koruTokenExpiresAt: response.koruTokenExpiresAt,
             };
+
+            // Log multi-tenant info if available
+            if (response.availableWebsites && response.availableWebsites.length > 1) {
+                console.log(`🏢 Multi-tenant: User has access to ${response.availableWebsites.length} websites`);
+            }
 
             // Save to state
             setAuthState(newState);
@@ -111,6 +122,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             localStorage.setItem(STORAGE_KEY, JSON.stringify({
                 account: newState.account,
                 user: newState.user,
+                availableWebsites: newState.availableWebsites,
                 koruTokenExpiresAt: newState.koruTokenExpiresAt,
             }));
         } catch (error: any) {
@@ -126,6 +138,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             token: null,
             account: null,
             user: null,
+            availableWebsites: undefined,
             koruTokenExpiresAt: undefined,
         });
 
@@ -138,7 +151,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     return (
-        <AuthContext.Provider value={{ ...authState, login, koruLogin, logout, isLoading, isAdmin }}>
+        <AuthContext.Provider value={{ ...authState, login, koruLogin, logout, isLoading, isAdmin, hasMultipleWebsites }}>
             {children}
         </AuthContext.Provider>
     );

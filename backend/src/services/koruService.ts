@@ -17,11 +17,18 @@ export interface KoruAuthorizeResponse {
     };
 }
 
+export interface KoruWebsite {
+    id: string;
+    url: string;
+}
+
 export interface KoruLoginResponse {
     access_token: string;
     token_type: string;
     expires_in: number;
     expires_at: string;
+    app_id: string;
+    websites: KoruWebsite[];
     user: {
         id: string;
         email: string;
@@ -216,8 +223,6 @@ export class KoruService {
                 sub: 'dev-user-id',
                 username: credentials.username,
                 email: `${credentials.username}@dev.test`,
-                websiteId: 'dev-website-id',
-                appId: 'dev-app-id',
                 iat: Math.floor(Date.now() / 1000),
                 exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour
             };
@@ -230,6 +235,13 @@ export class KoruService {
                 token_type: 'Bearer',
                 expires_in: 3600,
                 expires_at: new Date(Date.now() + 3600000).toISOString(),
+                app_id: 'dev-app-id',
+                websites: [
+                    {
+                        id: 'dev-website-id',
+                        url: 'http://localhost:3000',
+                    },
+                ],
                 user: {
                     id: 'dev-user-id',
                     email: `${credentials.username}@dev.test`,

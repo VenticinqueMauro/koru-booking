@@ -91,6 +91,7 @@ export class AccountInitService {
         additionalData?: {
             businessName?: string;
             email?: string;
+            referenceWebsite?: string;
             config?: Record<string, any>;
         }
     ): Promise<any> {
@@ -103,6 +104,7 @@ export class AccountInitService {
                 appId,
                 businessName: additionalData?.businessName || null,
                 email: additionalData?.email || null,
+                referenceWebsite: additionalData?.referenceWebsite || null,
                 active: true,
             },
         });
@@ -135,6 +137,7 @@ export class AccountInitService {
         additionalData?: {
             businessName?: string;
             email?: string;
+            referenceWebsite?: string;
             config?: Record<string, any>;
         }
     ): Promise<any> {

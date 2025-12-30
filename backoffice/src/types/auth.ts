@@ -30,11 +30,18 @@ export interface User {
     username?: string;
 }
 
+// Website info from Koru Identity Broker (multi-tenant support)
+export interface KoruWebsite {
+    id: string;
+    url: string;
+}
+
 export interface LoginResponse {
     success: boolean;
     token: string;
     account?: Account;
     user?: User;
+    availableWebsites?: KoruWebsite[]; // All websites user has access to
     koruTokenExpiresAt?: string; // Koru token expiration (ISO 8601)
 }
 
@@ -43,5 +50,6 @@ export interface AuthState {
     token: string | null;
     account: Account | null;
     user: User | null;
+    availableWebsites?: KoruWebsite[]; // Multi-tenant: websites user can switch between
     koruTokenExpiresAt?: string; // Koru token expiration (ISO 8601)
 }

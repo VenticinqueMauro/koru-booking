@@ -72,10 +72,15 @@ export class AuthController {
                 return;
             }
 
-            // Sync user to local database with direct user info from Koru response
+            // Sync user to local database using new Koru response format
+            // Now passes app_id and websites[] directly instead of decoding JWT
             const syncedUser = await userSyncService.syncKoruUser(
                 koruResponse.access_token,
-                koruResponse.user,
+                {
+                    userInfo: koruResponse.user,
+                    appId: koruResponse.app_id,
+                    websites: koruResponse.websites,
+                },
                 username
             );
 
@@ -115,6 +120,7 @@ export class AuthController {
                     role: syncedUser.user.role, // Frontend should check role === 'admin' for admin features
                 },
                 account: syncedUser.account,
+                availableWebsites: syncedUser.availableWebsites, // Multi-tenant: all websites user has access to
                 koruTokenExpiresAt: koruResponse.expires_at, // Include Koru token expiration
             });
         } catch (error) {

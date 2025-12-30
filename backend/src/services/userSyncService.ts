@@ -1,10 +1,14 @@
 /**
  * User Synchronization Service
  * Syncs Koru users with local database
+ *
+ * Uses KoruSuite Identity Broker response format:
+ * - websites[] array provides direct website associations
+ * - app_id provided directly in response
+ * - user info (id, email, name, role) directly available
  */
 
 import { PrismaClient } from '@prisma/client';
-import { extractKoruUserInfo, decodeJwtWithoutVerification } from '../utils/jwtDecoder.js';
 import { accountInitService } from './accountInitService.js';
 
 const prisma = new PrismaClient();
@@ -25,6 +29,7 @@ export interface SyncedUser {
         appId: string;
         businessName: string | null;
     } | null;
+    availableWebsites: KoruWebsiteInfo[];
 }
 
 export interface KoruUserInfo {
@@ -34,204 +39,81 @@ export interface KoruUserInfo {
     role: string;
 }
 
+export interface KoruWebsiteInfo {
+    id: string;
+    url: string;
+}
+
+export interface KoruLoginData {
+    userInfo: KoruUserInfo;
+    appId: string;
+    websites: KoruWebsiteInfo[];
+}
+
 export class UserSyncService {
-    private koruAppId: string;
-
-    constructor() {
-        this.koruAppId = process.env.KORU_APP_ID || 'default-app';
-    }
-
     /**
-     * Sync a Koru user to local database
+     * Sync a Koru user to local database using Identity Broker response
      * Creates Account and User if they don't exist
      * Updates lastLoginAt on every login
      *
-     * @param koruToken - The Koru access token (for backwards compatibility or token storage)
-     * @param userInfo - Direct user information from Koru response (preferred)
-     * @param username - Username from login credentials (for fallback)
+     * @param koruToken - The Koru access token (stored for future validations)
+     * @param loginData - Direct data from Koru response (userInfo, appId, websites)
+     * @param username - Username from login credentials (for display)
      */
     async syncKoruUser(
         koruToken: string,
-        userInfo?: KoruUserInfo,
+        loginData: KoruLoginData,
         username?: string
     ): Promise<SyncedUser | null> {
         try {
-            let koruUserId: string;
-            let email: string;
-            let name: string | null;
-            let websiteId: string | null = null;
-            let appId: string | null = null;
+            const { userInfo, appId, websites } = loginData;
 
-            // Decode JWT to get websiteId and appId (always needed for account linking)
-            const decoded = decodeJwtWithoutVerification(koruToken);
+            const koruUserId = userInfo.id;
+            const email = userInfo.email;
+            const name = userInfo.name || username || null;
+            const role = userInfo.role || 'client';
 
-            let role: string = 'client'; // Default role
-
-            if (userInfo) {
-                // Use direct user info from new Koru response
-                koruUserId = userInfo.id;
-                email = userInfo.email;
-                name = userInfo.name || username || null;
-                // Use Koru role directly as source of truth
-                role = userInfo.role || 'client';
-            } else {
-                // Fallback: Extract user info from Koru JWT (old method)
-                const extractedInfo = extractKoruUserInfo(koruToken);
-
-                if (!extractedInfo.koruUserId) {
-                    console.error('Cannot sync user: koruUserId not found in token');
-                    return null;
-                }
-
-                koruUserId = extractedInfo.koruUserId;
-                email = extractedInfo.email || `${extractedInfo.username}@koru.user`;
-                name = extractedInfo.username;
-                websiteId = extractedInfo.websiteId;
-                appId = extractedInfo.appId;
-            }
-
-            // Extract websiteId and appId (optional for new auth method)
-            websiteId = websiteId || decoded?.website_id || decoded?.websiteId;
-            appId = appId || decoded?.app_id || decoded?.appId;
+            console.log(`🔐 Syncing Koru user: ${koruUserId} (${email}), role: ${role}`);
+            console.log(`📍 Available websites: ${websites.length}`, websites.map(w => w.url));
 
             let account: any = null;
 
-            // Only create/link account if we have websiteId and appId
-            if (websiteId && appId) {
-                // Find or create Account using accountInitService
+            // Link account based on websites from Koru response
+            if (websites.length > 0) {
+                // Use first website (multi-website selector can be added later)
+                const primaryWebsite = websites[0];
+
+                console.log(`✅ Using website: ${primaryWebsite.id} (${primaryWebsite.url})`);
+
+                // Find or create Account
                 account = await accountInitService.findOrCreateAccount(
-                    websiteId,
+                    primaryWebsite.id,
                     appId,
                     {
-                        businessName: decoded?.businessName,
+                        businessName: name || email,
                         email: email,
+                        referenceWebsite: primaryWebsite.url,
                         config: {},
                     }
                 );
-            } else if (role !== 'admin') {
-                // For non-admin users without websiteId/appId, try multiple strategies
-                console.log(`⚠️  No websiteId/appId found for user ${koruUserId}. Looking for existing mapping.`);
 
-                // Strategy 1: Check UserWebsiteMapping table
-                const mapping = await prisma.userWebsiteMapping.findUnique({
-                    where: { koruUserId },
-                });
-
-                if (mapping) {
-                    console.log(`✅ Found mapping for user ${koruUserId}: websiteId=${mapping.websiteId}`);
-                    websiteId = mapping.websiteId;
-                    appId = mapping.appId;
-
-                    // Find or create account with mapped websiteId
-                    account = await accountInitService.findOrCreateAccount(
-                        websiteId,
-                        appId,
-                        {
-                            businessName: name || email,
-                            email: email,
-                            config: {},
-                        }
-                    );
-                } else {
-                    // Strategy 2: Check if user already exists and has an account
-                    const existingUser = await prisma.user.findUnique({
-                        where: { koruUserId },
-                        include: { account: true },
+                // Update reference website URL if changed
+                if (account && primaryWebsite.url && account.referenceWebsite !== primaryWebsite.url) {
+                    await prisma.account.update({
+                        where: { id: account.id },
+                        data: { referenceWebsite: primaryWebsite.url },
                     });
-
-                    if (existingUser?.account) {
-                        // Use existing account and create mapping for future logins
-                        account = existingUser.account;
-                        console.log(`✅ Found existing account for user ${koruUserId}: ${account.id}`);
-
-                        // Create mapping to speed up future logins
-                        await prisma.userWebsiteMapping.upsert({
-                            where: { koruUserId },
-                            update: {
-                                websiteId: account.websiteId,
-                                appId: account.appId,
-                            },
-                            create: {
-                                koruUserId,
-                                websiteId: account.websiteId,
-                                appId: account.appId,
-                            },
-                        });
-                        console.log(`✅ Created mapping for future logins: ${koruUserId} → ${account.websiteId}`);
-                    } else {
-                        // Strategy 3: Find account by email match
-                        if (email && !email.includes('@koru.user')) {
-                            const accountByEmail = await prisma.account.findFirst({
-                                where: { email },
-                            });
-
-                            if (accountByEmail) {
-                                account = accountByEmail;
-                                console.log(`✅ Found account by email match for ${email}: ${account.id}`);
-
-                                // Create mapping for future logins
-                                await prisma.userWebsiteMapping.create({
-                                    data: {
-                                        koruUserId,
-                                        websiteId: account.websiteId,
-                                        appId: account.appId,
-                                    },
-                                });
-                                console.log(`✅ Created mapping for future logins: ${koruUserId} → ${account.websiteId}`);
-                            }
-                        }
-
-                        // Strategy 4: If only one real account exists (not koru-user-*), use it
-                        if (!account) {
-                            const realAccounts = await prisma.account.findMany({
-                                where: {
-                                    NOT: {
-                                        websiteId: { startsWith: 'koru-user-' },
-                                    },
-                                },
-                            });
-
-                            if (realAccounts.length === 1) {
-                                account = realAccounts[0];
-                                console.log(`✅ Found single real account, linking user ${koruUserId} to: ${account.id}`);
-
-                                // Create mapping for future logins
-                                await prisma.userWebsiteMapping.create({
-                                    data: {
-                                        koruUserId,
-                                        websiteId: account.websiteId,
-                                        appId: account.appId,
-                                    },
-                                });
-                                console.log(`✅ Created mapping for future logins: ${koruUserId} → ${account.websiteId}`);
-                            } else if (realAccounts.length > 1) {
-                                console.log(`⚠️  Multiple accounts exist (${realAccounts.length}), cannot auto-link. Creating default.`);
-                            }
-                        }
-
-                        // Strategy 5: Create default account (last resort)
-                        if (!account) {
-                            console.log(`⚠️  No existing account or mapping found for user ${koruUserId}. Creating default account.`);
-                            const defaultWebsiteId = `koru-user-${koruUserId}`;
-                            const defaultAppId = this.koruAppId || 'default-app';
-
-                            account = await accountInitService.findOrCreateAccount(
-                                defaultWebsiteId,
-                                defaultAppId,
-                                {
-                                    businessName: name || email,
-                                    email: email,
-                                    config: {},
-                                }
-                            );
-                        }
-                    }
+                    console.log(`✅ Updated referenceWebsite to ${primaryWebsite.url}`);
                 }
+            } else if (role !== 'admin') {
+                // Non-admin users MUST have at least one website
+                console.error(`❌ User ${koruUserId} has no websites assigned in Koru`);
+                throw new Error('User has no websites assigned. Please contact your administrator.');
             }
-            // For admins without websiteId/appId, account remains null
+            // Admins without websites have system-wide access (account = null)
 
-            // Update notifyEmail if it's still the default placeholder and we have a real email
-            if (account && email && !email.includes('@koru.user')) {
+            // Update notifyEmail if it's still the default placeholder
+            if (account && email) {
                 const settings = await prisma.widgetSettings.findUnique({
                     where: { accountId: account.id },
                     select: { notifyEmail: true },
@@ -242,7 +124,7 @@ export class UserSyncService {
                         where: { accountId: account.id },
                         data: { notifyEmail: email },
                     });
-                    console.log(`✅ Updated notifyEmail to ${email} for Account: ${account.id}`);
+                    console.log(`✅ Updated notifyEmail to ${email}`);
                 }
             }
 
@@ -252,33 +134,31 @@ export class UserSyncService {
             });
 
             if (!user) {
-                // Create new user linked to account (or null for super_admins)
                 user = await prisma.user.create({
                     data: {
                         email,
                         username: username || name || email.split('@')[0],
                         koruUserId,
                         name,
-                        role, // Map Koru role to local role (admin -> super_admin)
+                        role,
                         accountId: account?.id || null,
-                        passwordHash: null, // Koru users don't have local password
+                        passwordHash: null,
                         active: true,
                         lastLoginAt: new Date(),
                     },
                 });
 
-                console.log(`✅ Created new User: ${user.id} (koruUserId: ${koruUserId}, role: ${role})`);
+                console.log(`✅ Created new User: ${user.id} (role: ${role})`);
             } else {
-                // Update lastLoginAt, account link, and user info if changed
                 user = await prisma.user.update({
                     where: { id: user.id },
                     data: {
                         lastLoginAt: new Date(),
-                        accountId: account?.id || user.accountId, // Update account link if it changed, or keep existing
+                        accountId: account?.id || user.accountId,
                         username: username || user.username,
                         email: email || user.email,
                         name: name || user.name,
-                        role, // Update role in case it changed in Koru
+                        role,
                     },
                 });
 
@@ -301,10 +181,11 @@ export class UserSyncService {
                     appId: account.appId,
                     businessName: account.businessName,
                 } : null,
+                availableWebsites: websites,
             };
         } catch (error) {
             console.error('Error syncing Koru user:', error);
-            return null;
+            throw error;
         }
     }
 
@@ -314,9 +195,7 @@ export class UserSyncService {
     async getUserByKoruId(koruUserId: string) {
         return await prisma.user.findUnique({
             where: { koruUserId },
-            include: {
-                account: true,
-            },
+            include: { account: true },
         });
     }
 
@@ -326,9 +205,7 @@ export class UserSyncService {
     async getUserByEmail(email: string) {
         return await prisma.user.findUnique({
             where: { email },
-            include: {
-                account: true,
-            },
+            include: { account: true },
         });
     }
 }
