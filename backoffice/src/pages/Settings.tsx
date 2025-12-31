@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { settingsApi } from '../api/settings';
 import { UpdateWidgetSettingsInput } from '../types';
 import { Layout } from '../components/Layout';
+import { WidgetPreview } from '../components/WidgetPreview';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye } from 'lucide-react';
 
 export default function Settings() {
   const queryClient = useQueryClient();
@@ -106,7 +107,10 @@ export default function Settings() {
           </p>
         </header>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Two Column Layout: Form + Preview */}
+        <div className="grid gap-8 xl:grid-cols-[1fr,400px]">
+          {/* Left Column: Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
           {/* Apariencia */}
           <Card>
             <CardHeader>
@@ -338,6 +342,30 @@ export default function Settings() {
             </Button>
           </div>
         </form>
+
+          {/* Right Column: Live Preview */}
+          <div className="hidden xl:block">
+            <div className="sticky top-6">
+              <WidgetPreview settings={formData} />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Preview (shown below form on smaller screens) */}
+        <div className="xl:hidden">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Eye className="h-4 w-4" />
+                Vista Previa
+              </CardTitle>
+              <CardDescription>Así se verá tu widget</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WidgetPreview settings={formData} />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </Layout>
   );
