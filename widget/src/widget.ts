@@ -227,6 +227,10 @@ export class BookingWidget extends KoruWidget {
         break;
     }
 
+    // Apply accent color
+    const accentColor = config.accentColor || '#00C896';
+    this.triggerButton.style.backgroundColor = accentColor;
+
     this.triggerButton.onclick = () => this.openModal(config);
     document.body.appendChild(this.triggerButton);
 
@@ -303,6 +307,9 @@ export class BookingWidget extends KoruWidget {
     this.clearCurrentComponent();
 
     const accentColor = config.accentColor || '#00C896';
+
+    // Apply accent color as CSS variable to the entire widget
+    this.widgetContainer.style.setProperty('--kb-accent-color', accentColor);
 
     // Clear container
     this.widgetContainer.innerHTML = '';
