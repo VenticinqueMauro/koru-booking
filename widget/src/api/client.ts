@@ -36,6 +36,19 @@ export interface BookingResponse {
   status: string;
 }
 
+export interface WidgetSettings {
+  layout: 'list' | 'grid' | 'button';
+  accentColor: string;
+  displayMode: 'modal' | 'inline';
+  triggerText: string;
+  triggerPosition: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  offsetX: number;
+  offsetY: number;
+  stepInterval: number;
+  timezone: string;
+  notifyEmail: string;
+}
+
 export interface KoruCredentials {
   websiteId: string;
   appId: string;
@@ -125,6 +138,21 @@ export class APIClient {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Error al crear reserva');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Obtiene la configuración del widget desde el backend
+   */
+  async getSettings(): Promise<WidgetSettings> {
+    const response = await fetch(`${this.baseURL}/api/settings`, {
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al cargar configuración del widget');
     }
 
     return response.json();

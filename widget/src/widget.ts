@@ -1,5 +1,5 @@
 import { KoruWidget, WidgetConfig } from '@redclover/koru-sdk';
-import { createApiClient, APIClient, Service, BookingResponse } from './api/client';
+import { createApiClient, APIClient, Service, BookingResponse, WidgetSettings } from './api/client';
 import { ServiceSelector } from './components/ServiceSelector';
 import { DateTimePicker } from './components/DateTimePicker';
 import { CustomerForm, CustomerData } from './components/CustomerForm';
@@ -74,67 +74,68 @@ export class BookingWidget extends KoruWidget {
   }
 
   /**
-   * Override start to bypass Koru SDK authentication in development
+   * Fetches widget settings from the backend and converts to BookingWidgetConfig
+   */
+  private async fetchBackendSettings(): Promise<BookingWidgetConfig> {
+    try {
+      console.log('📥 Fetching widget settings from backend...');
+      const settings = await this.apiClient.getSettings();
+      console.log('✅ Widget settings loaded from backend:', settings);
+
+      return {
+        accentColor: settings.accentColor,
+        displayMode: settings.displayMode,
+        triggerText: settings.triggerText,
+        triggerPosition: settings.triggerPosition,
+        offsetX: settings.offsetX,
+        offsetY: settings.offsetY,
+        layout: settings.layout,
+      };
+    } catch (error) {
+      console.warn('⚠️ Could not load settings from backend, using defaults:', error);
+      return {
+        accentColor: '#00C896',
+        displayMode: 'modal',
+        triggerText: 'Reservar',
+        triggerPosition: 'bottom-right',
+        offsetX: 24,
+        offsetY: 24,
+        layout: 'list',
+      };
+    }
+  }
+
+  /**
+   * Override start to load configuration from backend database
    */
   async start(): Promise<void> {
     console.log('🚀 BookingWidget.start() called');
-    // Check if running in development or standalone mode (Netlify demo)
-    const isDev = window.location.hostname === 'localhost' ||
-                  window.location.hostname === '127.0.0.1' ||
-                  window.location.hostname.includes('netlify.app');
-    console.log('isDev/standalone:', isDev);
 
     // Get credentials from script tag
     const credentials = this.getCredentialsFromScriptTag();
     console.log('🔑 Credentials from script tag:', credentials);
 
-    if (!credentials && !isDev) {
+    if (!credentials) {
       console.error('❌ Koru credentials not found in script tag');
       throw new Error('Koru credentials are required. Add data-website-id and data-app-id to your script tag.');
     }
 
     // Initialize API client with credentials
-    if (credentials) {
-      console.log('✅ Koru credentials loaded - websiteId:', credentials.websiteId, 'appId:', credentials.appId);
-      this.apiClient = createApiClient(undefined, credentials);
-    } else {
-      // Development mode without credentials
-      console.warn('⚠️ Development mode: No credentials provided - API calls will fail authentication');
-      this.apiClient = createApiClient();
-    }
+    console.log('✅ Koru credentials loaded - websiteId:', credentials.websiteId, 'appId:', credentials.appId);
+    this.apiClient = createApiClient(undefined, credentials);
 
-    // Use standalone mode for dev and Netlify (bypass Koru SDK)
-    if (isDev) {
-      this.log('🚀 Standalone mode detected: Bypassing Koru SDK auth');
+    // Fetch configuration from backend database (single source of truth)
+    const config = await this.fetchBackendSettings();
+    console.log('📋 Using configuration:', config);
 
-      const mockConfig: BookingWidgetConfig = {
-        accentColor: '#0d9488',
-        displayMode: 'inline', // Changed to inline for Netlify demo
-        triggerText: 'Reservar cita',
-        triggerPosition: 'bottom-right',
-        offsetX: 24,
-        offsetY: 24,
-      };
-
-      try {
-        console.log('Calling onInit...');
-        await this.onInit(mockConfig);
-        console.log('onInit completed, calling onRender...');
-        await this.onRender(mockConfig);
-        console.log('onRender completed');
-      } catch (error) {
-        console.error('Error starting widget in standalone mode:', error);
-      }
-      return;
-    }
-
-    // En producción embedded, usar el método start() del SDK de Koru
-    console.log('🚀 Production mode: Using Koru SDK authentication');
     try {
-      await super.start();
-      console.log('✅ Koru SDK authentication completed');
+      console.log('Calling onInit...');
+      await this.onInit(config);
+      console.log('onInit completed, calling onRender...');
+      await this.onRender(config);
+      console.log('onRender completed');
     } catch (error) {
-      console.error('❌ Error in Koru SDK authentication:', error);
+      console.error('Error starting widget:', error);
       throw error;
     }
   }
