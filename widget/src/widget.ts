@@ -302,15 +302,33 @@ export class BookingWidget extends KoruWidget {
     // Limpiar componentes anteriores
     this.clearCurrentComponent();
 
+    const accentColor = config.accentColor || '#00C896';
+
+    // Clear container
+    this.widgetContainer.innerHTML = '';
+
+    // Add header with accent color
+    const header = this.createElement('div', {
+      className: 'kb-widget-header',
+    });
+    header.style.backgroundColor = accentColor;
+    header.innerHTML = `
+      <svg class="kb-header-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2.5" y="3.5" width="13" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M2.5 6.5H15.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5.5 2V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M12.5 2V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="kb-header-title">Reservar cita</span>
+    `;
+    this.widgetContainer.appendChild(header);
+
     // Crear contenedor para el paso actual
     const stepContainer = this.createElement('div', {
       className: 'kb-step-container',
     });
 
-    this.widgetContainer.innerHTML = '';
     this.widgetContainer.appendChild(stepContainer);
-
-    const accentColor = config.accentColor || '#00C896';
 
     switch (this.currentStep) {
       case 'service':
