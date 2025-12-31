@@ -125,6 +125,62 @@ This will:
 - If authentication error: `netlify login`
 - To check deployment status: `netlify status` (from backoffice/ or widget/)
 
+### 6. Backend Deployment on Render
+
+**CRITICAL**: The backend has a dual-repository setup for deployment:
+
+**Repository Configuration:**
+- **Production repo (private)**: `Red-Clover-Consultoria/koru-booking`
+  - Main repository, owned by the company
+  - Remote name: `origin`
+  - URL: https://github.com/Red-Clover-Consultoria/koru-booking.git
+
+- **Mirror repo (public)**: `VenticinqueMauro/koru-booking`
+  - Public mirror for automated deployments
+  - Remote name: `personal`
+  - URL: https://github.com/VenticinqueMauro/koru-booking.git
+  - Connected to Render for auto-deploy
+
+**Why this setup?**
+- Render cannot access private repositories for auto-deploy
+- The personal mirror repo is kept synchronized to trigger Render deployments
+- All development happens in the company repo, then synced to personal repo
+
+**MANDATORY WORKFLOW - Push to BOTH repos:**
+
+After ANY code change that affects the backend:
+
+```bash
+# 1. Commit changes locally
+git add .
+git commit -m "your commit message"
+
+# 2. Push to company repo (origin)
+git push origin master
+
+# 3. Push to personal repo (personal) - REQUIRED for Render deployment
+git push personal master
+```
+
+**Important:**
+- NEVER skip pushing to `personal` after backend changes
+- Render auto-deploys from the `personal` repo
+- Both repos must stay synchronized at all times
+- If you forget to push to `personal`, backend changes won't deploy
+
+**To verify remote configuration:**
+```bash
+git remote -v
+```
+
+Expected output:
+```
+origin    https://github.com/Red-Clover-Consultoria/koru-booking.git (fetch)
+origin    https://github.com/Red-Clover-Consultoria/koru-booking.git (push)
+personal  https://github.com/VenticinqueMauro/koru-booking.git (fetch)
+personal  https://github.com/VenticinqueMauro/koru-booking.git (push)
+```
+
 ## Database Schema
 
 ### Key Models (Prisma)
@@ -303,7 +359,32 @@ Frontend changes:
 4. Verify slots respect business hours, breaks, and existing bookings
 
 ### Deploying Changes
-1. Commit all changes to `master` branch
-2. Push changes: `git push origin master`
-3. Deploy to Netlify: `npm run deploy` (deploys both backoffice and widget)
-   - Or deploy individually: `npm run deploy:backoffice` or `npm run deploy:widget`
+
+**Full deployment workflow:**
+
+1. **Commit changes locally**
+   ```bash
+   git add .
+   git commit -m "your commit message"
+   ```
+
+2. **Push to BOTH git remotes** (CRITICAL for backend deployment)
+   ```bash
+   git push origin master      # Company repo
+   git push personal master    # Personal repo (triggers Render backend deploy)
+   ```
+
+3. **Deploy frontend components to Netlify**
+   ```bash
+   npm run deploy              # Deploys both backoffice and widget
+   ```
+   Or deploy individually:
+   ```bash
+   npm run deploy:backoffice   # Backoffice only
+   npm run deploy:widget       # Widget only
+   ```
+
+**Important Notes:**
+- Backend deploys automatically when pushed to `personal` remote (Render watches this repo)
+- Frontend (backoffice/widget) requires manual Netlify deploy via `npm run deploy`
+- ALWAYS push to both remotes (`origin` and `personal`) to keep repos synchronized
