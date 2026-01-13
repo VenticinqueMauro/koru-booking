@@ -38,13 +38,19 @@ app.use('/api/settings', settingsRoutes);
 // Error handler (debe ir al final)
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`
+// Export for Vercel serverless
+export default app;
+
+// Local development server (only runs when executed directly)
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = env.PORT;
+  app.listen(PORT, () => {
+    console.log(`
 ╔═══════════════════════════════════════╗
 ║   🚀 Koru Booking API Server         ║
 ║   📡 Running on port ${PORT}            ║
 ║   🌍 Environment: ${env.NODE_ENV}       ║
 ╚═══════════════════════════════════════╝
-  `);
-});
+    `);
+  });
+}

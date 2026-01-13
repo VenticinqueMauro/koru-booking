@@ -3,6 +3,8 @@
     "private": true,
     "scripts": {
         "deploy": "npm run build:all && node scripts/deploy-netlify.js",
+        "deploy:all": "npm run deploy:backend && npm run deploy:backoffice && npm run deploy:widget",
+        "deploy:backend": "cd backend && npm run migrate:pre-deploy && vercel --prod",
         "deploy:backoffice": "cd backoffice && npm install && npm run build && netlify deploy --dir=dist --prod --site=989ed12a-f968-4f13-93bd-64c2bdad412d",
         "deploy:widget": "cd widget && npm install && npm run build && netlify deploy --dir=dist --prod --site=edd136c6-1000-4c64-a6fe-848d09335fe6",
         "build:all": "npm run build:backoffice && npm run build:widget",
