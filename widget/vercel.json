@@ -3,10 +3,10 @@
   "buildCommand": "npm install && npm run build && cp demo.html dist/index.html",
   "outputDirectory": "dist",
   "framework": "vite",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -28,7 +28,7 @@
       ]
     },
     {
-      "source": "/*.js",
+      "source": "/(.*)\\.js",
       "headers": [
         {
           "key": "Cache-Control",

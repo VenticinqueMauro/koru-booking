@@ -9,7 +9,13 @@
         "deploy:widget": "cd widget && npm install && npm run build && netlify deploy --dir=dist --prod --site=edd136c6-1000-4c64-a6fe-848d09335fe6",
         "build:all": "npm run build:backoffice && npm run build:widget",
         "build:backoffice": "cd backoffice && npm install && npm run build",
-        "build:widget": "cd widget && npm install && npm run build"
+        "build:widget": "cd widget && npm install && npm run build",
+        "vercel:setup": "node scripts/vercel-setup.js",
+        "vercel:deploy": "node scripts/deploy-vercel.js all",
+        "vercel:backend": "node scripts/deploy-vercel.js backend",
+        "vercel:backoffice": "node scripts/deploy-vercel.js backoffice",
+        "vercel:widget": "node scripts/deploy-vercel.js widget",
+        "vercel:preview": "cd backend && vercel && cd ../backoffice && vercel && cd ../widget && vercel"
     },
     "devDependencies": {
         "rimraf": "^5.0.5"

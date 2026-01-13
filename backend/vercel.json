@@ -2,31 +2,25 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["prisma/schema.prisma"]
-      }
+      "src": "api/index.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/health",
-      "dest": "/src/index.ts"
+      "dest": "/api/index"
     },
     {
       "src": "/api/(.*)",
-      "dest": "/src/index.ts"
+      "dest": "/api/index"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index"
     }
   ],
-  "functions": {
-    "src/index.ts": {
-      "maxDuration": 10,
-      "memory": 1024
-    }
-  },
   "env": {
     "NODE_ENV": "production"
-  },
-  "regions": ["iad1"]
+  }
 }
