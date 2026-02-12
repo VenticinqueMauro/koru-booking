@@ -11,7 +11,7 @@ Copia y pega este código en tu sitio web, justo antes del cierre de `</body>`:
 ```html
 <!-- Koru Booking Widget -->
 <script
-  src="https://production.koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
+  src="https://koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
   data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783"
   data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
   data-app-manager-url="https://app-manager.vercel.app"
@@ -23,7 +23,7 @@ Copia y pega este código en tu sitio web, justo antes del cierre de `</body>`:
 
 ```html
 <!-- Estilos del Widget -->
-<link rel="stylesheet" href="https://production.koru-booking-widget.pages.dev/koru-booking-widget.css">
+<link rel="stylesheet" href="https://koru-booking-widget.pages.dev/koru-booking-widget.css">
 ```
 
 ### Opción 2: Contenedor Específico (Modo Inline)
@@ -32,14 +32,14 @@ Si quieres que el widget aparezca en un lugar específico, agrega un contenedor:
 
 ```html
 <!-- En el <head> -->
-<link rel="stylesheet" href="https://production.koru-booking-widget.pages.dev/koru-booking-widget.css">
+<link rel="stylesheet" href="https://koru-booking-widget.pages.dev/koru-booking-widget.css">
 
 <!-- Donde quieres que aparezca el widget -->
 <div id="widget-root"></div>
 
 <!-- Script al final del body -->
 <script
-  src="https://production.koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
+  src="https://koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
   data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783"
   data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
   data-app-manager-url="https://app-manager.vercel.app"

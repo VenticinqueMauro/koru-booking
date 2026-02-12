@@ -10,11 +10,11 @@ Copia y pega este código en tu sitio web, justo antes del cierre de `</body>`:
 
 ```html
 <!-- Estilos del Widget -->
-<link rel="stylesheet" href="https://production.koru-booking-widget.pages.dev/koru-booking-widget.css">
+<link rel="stylesheet" href="https://koru-booking-widget.pages.dev/koru-booking-widget.css">
 
 <!-- Koru Booking Widget -->
 <script
-  src="https://production.koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
+  src="https://koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
   data-website-id="TU_WEBSITE_ID"
   data-app-id="TU_APP_ID"
   data-app-manager-url="https://app-manager.vercel.app"
@@ -35,7 +35,7 @@ Si quieres que el widget aparezca en un lugar específico de tu página:
   <title>Mi Página con Widget</title>
 
   <!-- Estilos del Widget -->
-  <link rel="stylesheet" href="https://production.koru-booking-widget.pages.dev/koru-booking-widget.css">
+  <link rel="stylesheet" href="https://koru-booking-widget.pages.dev/koru-booking-widget.css">
 </head>
 <body>
   <!-- Tu contenido -->
@@ -48,7 +48,7 @@ Si quieres que el widget aparezca en un lugar específico de tu página:
 
   <!-- Script del Widget (al final del body) -->
   <script
-    src="https://production.koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
+    src="https://koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
     data-website-id="TU_WEBSITE_ID"
     data-app-id="TU_APP_ID"
     data-app-manager-url="https://app-manager.vercel.app"
@@ -76,15 +76,15 @@ La configuración del widget (colores, posición, modo de visualización, etc.) 
 
 ### Producción (recomendado)
 ```
-https://production.koru-booking-widget.pages.dev/koru-booking-widget.umd.js
-https://production.koru-booking-widget.pages.dev/koru-booking-widget.css
+https://koru-booking-widget.pages.dev/koru-booking-widget.umd.js
+https://koru-booking-widget.pages.dev/koru-booking-widget.css
 ```
 
 ### Deployment Específico
 Si necesitas usar un deployment específico de la rama production:
 ```
-https://production.production.koru-booking-widget.pages.dev/koru-booking-widget.umd.js
-https://production.production.koru-booking-widget.pages.dev/koru-booking-widget.css
+https://production.koru-booking-widget.pages.dev/koru-booking-widget.umd.js
+https://production.koru-booking-widget.pages.dev/koru-booking-widget.css
 ```
 
 ## 📝 Ejemplo Completo
@@ -98,7 +98,7 @@ https://production.production.koru-booking-widget.pages.dev/koru-booking-widget.
   <title>Barbería El Corte Perfecto</title>
 
   <!-- Estilos del Widget -->
-  <link rel="stylesheet" href="https://production.koru-booking-widget.pages.dev/koru-booking-widget.css">
+  <link rel="stylesheet" href="https://koru-booking-widget.pages.dev/koru-booking-widget.css">
 
   <style>
     body {
@@ -134,7 +134,7 @@ https://production.production.koru-booking-widget.pages.dev/koru-booking-widget.
 
   <!-- Script del Widget -->
   <script
-    src="https://production.koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
+    src="https://koru-booking-widget.pages.dev/koru-booking-widget.umd.js"
     data-website-id="250ad662-1ceb-4de2-b0f3-ac6f7929e783"
     data-app-id="034927e7-ebe2-4c6b-9c9d-9b56c453d807"
     data-app-manager-url="https://app-manager.vercel.app"

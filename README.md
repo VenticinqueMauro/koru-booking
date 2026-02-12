@@ -175,8 +175,8 @@ Este comando:
 ### URLs de Producción
 
 - **Backend API**: https://koru-booking-backend.vercel.app/api
-- **Backoffice**: https://production.koru-booking-backoffice.pages.dev
-- **Widget Demo**: https://production.koru-booking-widget.pages.dev
+- **Backoffice**: https://koru-booking-backoffice.pages.dev
+- **Widget Demo**: https://koru-booking-widget.pages.dev
 
 ## 🧪 Testing QA
 

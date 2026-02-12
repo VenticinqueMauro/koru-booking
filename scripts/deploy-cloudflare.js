@@ -139,7 +139,7 @@ function deployBackoffice() {
     log('Nota: Si es la primera vez, se creará el proyecto automáticamente', 'yellow');
 
     return execCommand(
-        'wrangler pages deploy dist --project-name=koru-booking-backoffice --branch=production',
+        'wrangler pages deploy dist --project-name=koru-booking-backoffice --branch=master',
         backofficeDir,
         'Deploying backoffice a Cloudflare Pages'
     );
@@ -195,7 +195,7 @@ function deployWidget() {
     log('Nota: Si es la primera vez, se creará el proyecto automáticamente', 'yellow');
 
     return execCommand(
-        'wrangler pages deploy dist --project-name=koru-booking-widget --branch=production',
+        'wrangler pages deploy dist --project-name=koru-booking-widget --branch=master',
         widgetDir,
         'Deploying widget a Cloudflare Pages'
     );
