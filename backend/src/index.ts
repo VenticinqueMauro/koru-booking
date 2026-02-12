@@ -26,6 +26,20 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Debug endpoint - CORS configuration (TEMPORARY)
+app.get('/debug/cors', (req, res) => {
+  const corsOrigin = process.env.CORS_ORIGIN;
+  const allowedOrigins = corsOrigin?.split(',') || [];
+
+  res.json({
+    rawCorsOrigin: corsOrigin,
+    allowedOrigins: allowedOrigins,
+    originCount: allowedOrigins.length,
+    requestOrigin: req.headers.origin || 'no-origin-header',
+    isAllowed: allowedOrigins.includes(req.headers.origin || ''),
+  });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/super-admin', superAdminRoutes);
