@@ -71,6 +71,7 @@
   -moz-osx-font-smoothing: grayscale;
   background: #ffffff;
   border-radius: var(--kb-radius-lg);
+  border: none;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
   border: 1px solid #e2e8f0;
@@ -335,6 +336,7 @@
   transition: transform var(--kb-transition-smooth);
   max-height: 90vh;
   overflow-y: auto;
+  border: none;
 }
 
 .kb-modal-overlay.kb-modal-open .kb-modal-content {
