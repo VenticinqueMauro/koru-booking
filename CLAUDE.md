@@ -104,12 +104,14 @@ wrangler login
 - `widget/public/_redirects` - Demo page routing
 
 **Production URLs:**
-- Backoffice: https://koru-booking-backoffice.pages.dev
-- Widget: https://koru-booking-widget.pages.dev
+- Backoffice: https://production.koru-booking-backoffice.pages.dev
+- Widget: https://production.koru-booking-widget.pages.dev
 
 **Environment Variables (configure in Cloudflare dashboard):**
 - Backoffice: `VITE_BACKEND_API_URL` pointing to Vercel backend
 - Widget: `VITE_BACKEND_API_URL`, `VITE_KORU_WEBSITE_ID`, `VITE_KORU_APP_ID`, `VITE_KORU_URL`
+
+**Note:** The URLs use the `production.` subdomain prefix because they point to the production branch deployment.
 
 **Troubleshooting:**
 - If `wrangler` command not found: `npm install -g wrangler`
