@@ -13,12 +13,12 @@ Koru Booking is a distributed booking/appointments system with 3 independent com
 
 ### Root Level (Monorepo)
 ```bash
-npm run build:all          # Build all components
 npm run build:backoffice   # Build backoffice only
 npm run build:widget       # Build widget only
-npm run deploy             # Build all + deploy to Netlify
-npm run deploy:backoffice  # Deploy backoffice only
-npm run deploy:widget      # Deploy widget only
+npm run deploy             # Deploy frontend (backoffice + widget) to Cloudflare Pages
+npm run deploy:backend     # Deploy backend to Vercel
+npm run deploy:backoffice  # Deploy backoffice only to Cloudflare Pages
+npm run deploy:widget      # Deploy widget only to Cloudflare Pages
 ```
 
 ### Backend (cd backend/)
@@ -79,53 +79,44 @@ The widget extends `KoruWidget` from `@redclover/koru-sdk`:
 - Do NOT add `@redclover/koru-react-sdk` dependency back
 - Future authentication will be implemented separately
 
-### 5. Deployment to Netlify
-Each component deploys independently to Netlify:
+### 5. Frontend Deployment to Cloudflare Pages
+Frontend components (backoffice and widget) deploy to Cloudflare Pages:
 
 **Prerequisites:**
 ```bash
-npm install -g netlify-cli
-netlify login
+npm install -g wrangler
+wrangler login
 ```
 
 **Deployment Process:**
-1. **Deploy all**: `npm run deploy`
+1. **Deploy both frontends**: `npm run deploy`
    - Builds both widget and backoffice
-   - Deploys each to their respective Netlify site
+   - Deploys each to Cloudflare Pages
 
 2. **Deploy individually**:
    - Backoffice: `npm run deploy:backoffice`
    - Widget: `npm run deploy:widget`
 
 **Configuration:**
-- Each component has its own `netlify.toml` file
-- Backoffice: SPA routing redirects configured
-- Widget: CORS headers enabled for embedding
+- `backoffice/public/_headers` - Security headers and cache control
+- `backoffice/public/_redirects` - SPA routing (all routes to index.html)
+- `widget/public/_headers` - CORS headers for embedding
+- `widget/public/_redirects` - Demo page routing
 
 **Production URLs:**
-- Backoffice: https://koru-booking-backoffice.netlify.app
-- Widget: https://koru-booking-widget.netlify.app
+- Backoffice: https://koru-booking-backoffice.pages.dev
+- Widget: https://koru-booking-widget.pages.dev
 
-**Site IDs (configured in scripts):**
-- Backoffice: `989ed12a-f968-4f13-93bd-64c2bdad412d`
-- Widget: `edd136c6-1000-4c64-a6fe-848d09335fe6`
-
-**Quick Start - Deploy Everything:**
-```bash
-# From project root
-npm run deploy
-```
-This will:
-1. Build backoffice (`npm run build:backoffice`)
-2. Build widget (`npm run build:widget`)
-3. Deploy both to Netlify automatically
+**Environment Variables (configure in Cloudflare dashboard):**
+- Backoffice: `VITE_BACKEND_API_URL` pointing to Vercel backend
+- Widget: `VITE_BACKEND_API_URL`, `VITE_KORU_WEBSITE_ID`, `VITE_KORU_APP_ID`, `VITE_KORU_URL`
 
 **Troubleshooting:**
-- If `netlify` command not found: `npm install -g netlify-cli`
-- If authentication error: `netlify login`
-- To check deployment status: `netlify status` (from backoffice/ or widget/)
+- If `wrangler` command not found: `npm install -g wrangler`
+- If authentication error: `wrangler login`
+- First deployment creates projects automatically
 
-### 6. Backend Deployment on Render
+### 6. Backend Deployment on Vercel
 
 **CRITICAL**: The backend has a dual-repository setup for deployment:
 
@@ -139,16 +130,16 @@ This will:
   - Public mirror for automated deployments
   - Remote name: `personal`
   - URL: https://github.com/VenticinqueMauro/koru-booking.git
-  - Connected to Render for auto-deploy
+  - Connected to Vercel for auto-deploy
 
 **Why this setup?**
-- Render cannot access private repositories for auto-deploy
-- The personal mirror repo is kept synchronized to trigger Render deployments
+- Vercel auto-deploys from GitHub repositories
+- The personal mirror repo is kept synchronized to trigger Vercel deployments
 - All development happens in the company repo, then synced to personal repo
 
 **MANDATORY WORKFLOW - Push to BOTH repos:**
 
-After ANY code change that affects the backend:
+After ANY code change:
 
 ```bash
 # 1. Commit changes locally
@@ -158,15 +149,19 @@ git commit -m "your commit message"
 # 2. Push to company repo (origin)
 git push origin master
 
-# 3. Push to personal repo (personal) - REQUIRED for Render deployment
+# 3. Push to personal repo (personal) - REQUIRED for Vercel backend auto-deploy
 git push personal master
 ```
 
 **Important:**
-- NEVER skip pushing to `personal` after backend changes
-- Render auto-deploys from the `personal` repo
-- Both repos must stay synchronized at all times
+- ALWAYS push to both remotes (`origin` and `personal`) to keep repos synchronized
+- Vercel auto-deploys backend from the `personal` repo
 - If you forget to push to `personal`, backend changes won't deploy
+
+**Manual backend deployment:**
+```bash
+npm run deploy:backend  # Deploy backend to Vercel manually
+```
 
 **To verify remote configuration:**
 ```bash
@@ -228,7 +223,7 @@ VITE_BACKEND_API_URL=http://localhost:4000/api
 
 **Production** (`.env.production`):
 ```
-VITE_BACKEND_API_URL=https://koru-booking.onrender.com/api
+VITE_BACKEND_API_URL=https://koru-booking-backend.vercel.app/api
 ```
 
 ## Important Implementation Details
@@ -264,8 +259,8 @@ Both widget and backoffice use centralized API clients:
 1. **Never re-add Koru SDK to backoffice** - It was intentionally removed to make it open access
 2. **Unique constraints** - The `(serviceId, date, time)` constraint is essential for preventing double-bookings
 3. **Transaction usage** - Always use Prisma transactions when checking availability + creating bookings
-4. **Production API URL** - Backend deployed on Render: https://koru-booking.onrender.com/api
-5. **Deployment** - Use Netlify for static hosting (backoffice and widget deploy independently)
+4. **Production API URL** - Backend deployed on Vercel: https://koru-booking-backend.vercel.app/api
+5. **Deployment** - Frontend on Cloudflare Pages, Backend on Vercel (auto-deploy from GitHub)
 
 ## Repository Cleanliness Policy
 
@@ -368,15 +363,15 @@ Frontend changes:
    git commit -m "your commit message"
    ```
 
-2. **Push to BOTH git remotes** (CRITICAL for backend deployment)
+2. **Push to BOTH git remotes** (CRITICAL)
    ```bash
    git push origin master      # Company repo
-   git push personal master    # Personal repo (triggers Render backend deploy)
+   git push personal master    # Personal repo (triggers Vercel backend auto-deploy)
    ```
 
-3. **Deploy frontend components to Netlify**
+3. **Deploy frontend components to Cloudflare Pages**
    ```bash
-   npm run deploy              # Deploys both backoffice and widget
+   npm run deploy              # Deploys both backoffice and widget to Cloudflare
    ```
    Or deploy individually:
    ```bash
@@ -385,6 +380,7 @@ Frontend changes:
    ```
 
 **Important Notes:**
-- Backend deploys automatically when pushed to `personal` remote (Render watches this repo)
-- Frontend (backoffice/widget) requires manual Netlify deploy via `npm run deploy`
+- Backend auto-deploys when pushed to `personal` remote (Vercel watches this repo)
+- Frontend (backoffice/widget) requires manual Cloudflare Pages deploy via `npm run deploy`
 - ALWAYS push to both remotes (`origin` and `personal`) to keep repos synchronized
+- Manual backend deploy: `npm run deploy:backend` (if needed)

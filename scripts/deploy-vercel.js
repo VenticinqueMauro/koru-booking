@@ -1,19 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * Script de deployment automatizado para Vercel
- * 
- * Este script automatiza el proceso de deployment a Vercel sin necesidad
- * de conectar GitHub (útil cuando el repo es privado sin plan de pago).
- * 
+ * Script de deployment automatizado para Vercel (Backend)
+ *
+ * Este script automatiza el deployment del backend a Vercel.
+ * Los frontends (backoffice y widget) se deplayan a Cloudflare Pages.
+ *
  * Uso:
- *   node scripts/deploy-vercel.js [backend|backoffice|widget|all]
- * 
- * Ejemplos:
- *   node scripts/deploy-vercel.js all           # Deploy todo
- *   node scripts/deploy-vercel.js backend       # Solo backend
- *   node scripts/deploy-vercel.js backoffice    # Solo backoffice
- *   node scripts/deploy-vercel.js widget        # Solo widget
+ *   node scripts/deploy-vercel.js
+ *
+ * Nota: Las migraciones de Prisma se ejecutan automáticamente en Vercel
+ *       durante el build gracias a "vercel-build": "prisma generate && tsc"
+ *       y "postdeploy": "prisma migrate deploy" en backend/package.json
  */
 
 const { execSync } = require('child_process');
@@ -69,165 +67,39 @@ function deployBackend() {
     log('\n⚠ Nota: Las migraciones se ejecutarán automáticamente en Vercel', 'yellow');
     log('Asegúrate de tener las variables de entorno configuradas en Vercel:', 'yellow');
     log('  - DATABASE_URL (pooler connection)', 'yellow');
-    log('  - DIRECT_DATABASE_URL (direct connection for migrations)\n', 'yellow');
+    log('  - DIRECT_DATABASE_URL (direct connection for migrations)', 'yellow');
+    log('  - RESEND_API_KEY', 'yellow');
+    log('  - EMAIL_FROM', 'yellow');
+    log('  - KORU_API_URL', 'yellow');
+    log('  - KORU_APP_ID', 'yellow');
+    log('  - KORU_APP_SECRET', 'yellow');
+    log('  - CORS_ORIGIN\n', 'yellow');
 
     // Deploy a producción
-    return execCommand(
+    const success = execCommand(
         'vercel --prod --yes',
         backendDir,
         'Deploying backend a producción'
     );
-}
 
-function deployBackoffice() {
-    log('\n═══════════════════════════════════════', 'bright');
-    log('  DEPLOYING BACKOFFICE TO VERCEL', 'bright');
-    log('═══════════════════════════════════════', 'bright');
-
-    const backofficeDir = path.join(__dirname, '..', 'backoffice');
-
-    if (!fs.existsSync(backofficeDir)) {
-        log('Error: Directorio backoffice no encontrado', 'red');
-        return false;
-    }
-
-    // Instalar dependencias
-    if (!execCommand(
-        'npm install',
-        backofficeDir,
-        'Instalando dependencias'
-    )) {
-        return false;
-    }
-
-    // Build
-    if (!execCommand(
-        'npm run build',
-        backofficeDir,
-        'Building backoffice'
-    )) {
-        return false;
-    }
-
-    // Deploy a producción
-    return execCommand(
-        'vercel --prod --yes',
-        backofficeDir,
-        'Deploying backoffice a producción'
-    );
-}
-
-function deployWidget() {
-    log('\n═══════════════════════════════════════', 'bright');
-    log('  DEPLOYING WIDGET TO VERCEL', 'bright');
-    log('═══════════════════════════════════════', 'bright');
-
-    const widgetDir = path.join(__dirname, '..', 'widget');
-
-    if (!fs.existsSync(widgetDir)) {
-        log('Error: Directorio widget no encontrado', 'red');
-        return false;
-    }
-
-    // Instalar dependencias
-    if (!execCommand(
-        'npm install',
-        widgetDir,
-        'Instalando dependencias'
-    )) {
-        return false;
-    }
-
-    // Build
-    if (!execCommand(
-        'npm run build',
-        widgetDir,
-        'Building widget'
-    )) {
-        return false;
-    }
-
-    // Deploy a producción
-    return execCommand(
-        'vercel --prod --yes',
-        widgetDir,
-        'Deploying widget a producción'
-    );
-}
-
-function deployAll() {
-    log('\n╔═══════════════════════════════════════╗', 'bright');
-    log('║  DEPLOYING ALL COMPONENTS TO VERCEL  ║', 'bright');
-    log('╚═══════════════════════════════════════╝', 'bright');
-
-    const results = {
-        backend: false,
-        backoffice: false,
-        widget: false
-    };
-
-    // Deploy backend primero (los frontends dependen de él)
-    results.backend = deployBackend();
-
-    if (!results.backend) {
-        log('\n⚠ Backend deployment falló. ¿Continuar con frontend? (Ctrl+C para cancelar)', 'yellow');
-        // Esperar 5 segundos antes de continuar
-        execSync('timeout /t 5', { stdio: 'inherit', shell: true });
-    }
-
-    // Deploy frontends en paralelo (conceptualmente, aunque se ejecutan secuencialmente)
-    results.backoffice = deployBackoffice();
-    results.widget = deployWidget();
-
-    // Resumen final
-    log('\n╔═══════════════════════════════════════╗', 'bright');
-    log('║         DEPLOYMENT SUMMARY            ║', 'bright');
-    log('╚═══════════════════════════════════════╝', 'bright');
-
-    log(`\nBackend:    ${results.backend ? '✓ SUCCESS' : '✗ FAILED'}`, results.backend ? 'green' : 'red');
-    log(`Backoffice: ${results.backoffice ? '✓ SUCCESS' : '✗ FAILED'}`, results.backoffice ? 'green' : 'red');
-    log(`Widget:     ${results.widget ? '✓ SUCCESS' : '✗ FAILED'}`, results.widget ? 'green' : 'red');
-
-    const allSuccess = results.backend && results.backoffice && results.widget;
-
-    if (allSuccess) {
-        log('\n🎉 ¡Todos los componentes deployados exitosamente!', 'green');
+    if (success) {
+        log('\n🎉 Backend deployado exitosamente!', 'green');
+        log('\n💡 Recuerda:', 'cyan');
+        log('  - Frontend (backoffice y widget) se deploya a Cloudflare Pages', 'cyan');
+        log('  - Usa: npm run deploy (desde root) para deployar frontends', 'cyan');
     } else {
-        log('\n⚠ Algunos componentes fallaron. Revisa los logs arriba.', 'yellow');
+        log('\n⚠ Backend deployment falló. Revisa los logs arriba.', 'yellow');
     }
 
-    return allSuccess;
+    return success;
 }
 
 // Main
 function main() {
-    const args = process.argv.slice(2);
-    const target = args[0] || 'all';
-
-    log('\n🚀 Koru Booking - Vercel Deployment Script', 'bright');
+    log('\n🚀 Koru Booking - Vercel Backend Deployment', 'bright');
     log('═══════════════════════════════════════════\n', 'bright');
 
-    let success = false;
-
-    switch (target.toLowerCase()) {
-        case 'backend':
-            success = deployBackend();
-            break;
-        case 'backoffice':
-            success = deployBackoffice();
-            break;
-        case 'widget':
-            success = deployWidget();
-            break;
-        case 'all':
-            success = deployAll();
-            break;
-        default:
-            log(`Error: Target desconocido "${target}"`, 'red');
-            log('\nUso: node scripts/deploy-vercel.js [backend|backoffice|widget|all]', 'yellow');
-            process.exit(1);
-    }
-
+    const success = deployBackend();
     process.exit(success ? 0 : 1);
 }
 
