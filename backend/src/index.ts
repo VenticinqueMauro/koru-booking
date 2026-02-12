@@ -29,14 +29,17 @@ app.get('/health', (req, res) => {
 // Debug endpoint - CORS configuration (TEMPORARY)
 app.get('/debug/cors', (req, res) => {
   const corsOrigin = process.env.CORS_ORIGIN;
-  const allowedOrigins = corsOrigin?.split(',') || [];
+  const allowedOrigins = corsOrigin?.split(',').map(url => url.trim()) || [];
 
   res.json({
     rawCorsOrigin: corsOrigin,
     allowedOrigins: allowedOrigins,
+    allowedOriginsWithTrim: allowedOrigins,
     originCount: allowedOrigins.length,
     requestOrigin: req.headers.origin || 'no-origin-header',
     isAllowed: allowedOrigins.includes(req.headers.origin || ''),
+    isWidgetAllowed: allowedOrigins.includes('https://koru-booking-widget.pages.dev'),
+    isBackofficeAllowed: allowedOrigins.includes('https://koru-booking-backoffice.pages.dev'),
   });
 });
 
