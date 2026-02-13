@@ -238,7 +238,7 @@ export function WidgetPreview({ settings }: WidgetPreviewProps) {
                   <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-[280px] animate-in zoom-in-95 duration-200">
                     {/* Modal Header */}
                     <div
-                      className="px-4 py-3 text-white flex items-center justify-between"
+                      className="px-4 py-3 text-white flex items-center justify-between rounded-t-xl"
                       style={{ backgroundColor: accentColor }}
                     >
                       <div className="flex items-center gap-2">
@@ -274,7 +274,7 @@ export function WidgetPreview({ settings }: WidgetPreviewProps) {
               >
                 {/* Widget Header */}
                 <div
-                  className="px-4 py-3 text-white"
+                  className="px-4 py-3 text-white rounded-t-xl"
                   style={{ backgroundColor: accentColor }}
                 >
                   <div className="flex items-center gap-2">
