@@ -916,6 +916,11 @@
   font-weight: 700;
 }
 
+/* Fix contrast when today is selected */
+.kb-day-card.kb-day-today.kb-day-selected .kb-day-number {
+  color: white;
+}
+
 @media (max-width: 640px) {
   .kb-calendar {
     gap: 6px;
