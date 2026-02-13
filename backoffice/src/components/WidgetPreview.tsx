@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { UpdateWidgetSettingsInput } from '../types';
-import { Monitor, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { Monitor, Calendar, Clock, ChevronRight, X } from 'lucide-react';
 
 interface WidgetPreviewProps {
   settings: UpdateWidgetSettingsInput;
@@ -16,6 +16,8 @@ export function WidgetPreview({ settings }: WidgetPreviewProps) {
     offsetY,
     layout,
   } = settings;
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Calculate position styles for the floating button
   const buttonPositionStyles = useMemo(() => {
@@ -55,6 +57,101 @@ export function WidgetPreview({ settings }: WidgetPreviewProps) {
     { name: 'Coloración', duration: 90, price: 8500 },
     { name: 'Tratamiento capilar', duration: 45, price: 4500 },
   ];
+
+  // Render service list based on layout
+  const renderServiceList = (isCompact = false) => {
+    const textSizeClasses = isCompact ? {
+      name: 'text-xs',
+      meta: 'text-[10px]',
+      price: 'text-xs',
+    } : {
+      name: 'text-sm',
+      meta: 'text-xs',
+      price: 'text-sm',
+    };
+
+    if (layout === 'list') {
+      return (
+        <div className={isCompact ? 'space-y-1.5' : 'space-y-2'}>
+          {mockServices.map((service, idx) => (
+            <div
+              key={idx}
+              className={`flex items-center justify-between ${isCompact ? 'p-2' : 'p-3'} rounded-lg bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group`}
+            >
+              <div className="flex-1 min-w-0">
+                <p className={`${textSizeClasses.name} font-medium text-slate-700 dark:text-slate-200 truncate`}>
+                  {service.name}
+                </p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className={`${textSizeClasses.meta} text-slate-500 dark:text-slate-400 flex items-center gap-0.5`}>
+                    <Clock className={isCompact ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
+                    {service.duration} min
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`${textSizeClasses.price} font-bold`}
+                  style={{ color: accentColor }}
+                >
+                  ${service.price.toLocaleString()}
+                </span>
+                <ChevronRight
+                  className={`${isCompact ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-slate-400 group-hover:translate-x-0.5 transition-transform`}
+                  style={{ color: accentColor }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (layout === 'grid') {
+      return (
+        <div className={`grid grid-cols-2 ${isCompact ? 'gap-1.5' : 'gap-2'}`}>
+          {mockServices.slice(0, 4).map((service, idx) => (
+            <div
+              key={idx}
+              className={`${isCompact ? 'p-2' : 'p-3'} rounded-lg bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer text-center`}
+            >
+              <div
+                className={`${isCompact ? 'w-6 h-6' : 'w-8 h-8'} rounded-full mx-auto ${isCompact ? 'mb-1.5' : 'mb-2'} flex items-center justify-center`}
+                style={{ backgroundColor: `${accentColor}20` }}
+              >
+                <Calendar className={isCompact ? 'w-3 h-3' : 'w-4 h-4'} style={{ color: accentColor }} />
+              </div>
+              <p className={`${textSizeClasses.name} font-medium text-slate-700 dark:text-slate-200 truncate`}>
+                {service.name}
+              </p>
+              <p
+                className={`${textSizeClasses.price} font-bold mt-0.5`}
+                style={{ color: accentColor }}
+              >
+                ${service.price.toLocaleString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (layout === 'button') {
+      return (
+        <div className={isCompact ? 'space-y-1.5' : 'space-y-2'}>
+          {mockServices.map((service, idx) => (
+            <button
+              key={idx}
+              className={`w-full ${isCompact ? 'py-2 px-3' : 'py-2.5 px-4'} rounded-lg text-white ${textSizeClasses.name} font-medium transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]`}
+              style={{ backgroundColor: accentColor }}
+            >
+              {service.name} - ${service.price.toLocaleString()}
+            </button>
+          ))}
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="relative">
@@ -121,17 +218,49 @@ export function WidgetPreview({ settings }: WidgetPreviewProps) {
 
           {/* MODAL MODE: Floating Button */}
           {displayMode === 'modal' && (
-            <button
-              style={{
-                ...buttonPositionStyles,
-                backgroundColor: accentColor,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-white text-xs font-medium shadow-lg hover:shadow-xl hover:scale-105 transition-all"
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{triggerText || 'Reservar'}</span>
-            </button>
+            <>
+              <button
+                onClick={() => setIsModalOpen(!isModalOpen)}
+                style={{
+                  ...buttonPositionStyles,
+                  backgroundColor: accentColor,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-full text-white text-xs font-medium shadow-lg hover:shadow-xl hover:scale-105 transition-all z-10"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{triggerText || 'Reservar'}</span>
+              </button>
+
+              {/* Modal Overlay */}
+              {isModalOpen && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-20 animate-in fade-in duration-200">
+                  <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-[280px] animate-in zoom-in-95 duration-200">
+                    {/* Modal Header */}
+                    <div
+                      className="px-4 py-3 text-white flex items-center justify-between"
+                      style={{ backgroundColor: accentColor }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        <span className="font-semibold text-sm">Reservar cita</span>
+                      </div>
+                      <button
+                        onClick={() => setIsModalOpen(false)}
+                        className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Modal Content */}
+                    <div className="p-3 max-h-[200px] overflow-y-auto">
+                      {renderServiceList(true)}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* INLINE MODE: Embedded Widget */}
@@ -155,83 +284,8 @@ export function WidgetPreview({ settings }: WidgetPreviewProps) {
                 </div>
 
                 {/* Widget Content */}
-                <div className="p-3 space-y-2">
-                  {/* Service List/Grid/Button based on layout */}
-                  {layout === 'list' && (
-                    <div className="space-y-1.5">
-                      {mockServices.map((service, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer group"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate">
-                              {service.name}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-0.5">
-                                <Clock className="w-2.5 h-2.5" />
-                                {service.duration} min
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className="text-xs font-bold"
-                              style={{ color: accentColor }}
-                            >
-                              ${service.price.toLocaleString()}
-                            </span>
-                            <ChevronRight
-                              className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform"
-                              style={{ color: accentColor }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {layout === 'grid' && (
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {mockServices.slice(0, 4).map((service, idx) => (
-                        <div
-                          key={idx}
-                          className="p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer text-center"
-                        >
-                          <div
-                            className="w-6 h-6 rounded-full mx-auto mb-1.5 flex items-center justify-center"
-                            style={{ backgroundColor: `${accentColor}20` }}
-                          >
-                            <Calendar className="w-3 h-3" style={{ color: accentColor }} />
-                          </div>
-                          <p className="text-[10px] font-medium text-slate-700 dark:text-slate-200 truncate">
-                            {service.name}
-                          </p>
-                          <p
-                            className="text-[10px] font-bold mt-0.5"
-                            style={{ color: accentColor }}
-                          >
-                            ${service.price.toLocaleString()}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {layout === 'button' && (
-                    <div className="space-y-1.5">
-                      {mockServices.map((service, idx) => (
-                        <button
-                          key={idx}
-                          className="w-full py-2 px-3 rounded-lg text-white text-xs font-medium transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
-                          style={{ backgroundColor: accentColor }}
-                        >
-                          {service.name} - ${service.price.toLocaleString()}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                <div className="p-3">
+                  {renderServiceList(true)}
                 </div>
               </div>
             </div>
@@ -252,8 +306,16 @@ export function WidgetPreview({ settings }: WidgetPreviewProps) {
                 triggerPosition === 'bottom-left' ? 'inferior izquierda' :
                 triggerPosition === 'top-right' ? 'superior derecha' :
                 'superior izquierda'
-              } de tu sitio web.`
-            : 'El widget se mostrará embebido directamente en tu página donde coloques el contenedor.'
+              } de tu sitio web. Haz clic en el botón para ver cómo se abrirá el modal con el diseño ${
+                layout === 'list' ? 'de lista' :
+                layout === 'grid' ? 'de cuadrícula' :
+                'de botones'
+              }.`
+            : `El widget se mostrará embebido directamente en tu página donde coloques el contenedor con el diseño ${
+                layout === 'list' ? 'de lista' :
+                layout === 'grid' ? 'de cuadrícula' :
+                'de botones'
+              }.`
           }
         </span>
       </div>
