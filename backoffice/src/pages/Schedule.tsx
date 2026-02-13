@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { schedulesApi } from '../api/schedules';
 import { Schedule, CreateScheduleInput } from '../types';
 import { Layout } from '../components/Layout';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -116,7 +115,20 @@ function DayScheduleRow({ label, dayValue, currentSchedule, onSave, isSaving }: 
   const [breakStart, setBreakStart] = useState(currentSchedule.breakStart || '');
   const [breakEnd, setBreakEnd] = useState(currentSchedule.breakEnd || '');
 
-  const handleSave = () => {
+  const validateAndSave = () => {
+    // Si está deshabilitado, guardar sin validación
+    if (!enabled) {
+      onSave({
+        dayOfWeek: dayValue,
+        enabled,
+        startTime,
+        endTime,
+        breakStart: breakStart || undefined,
+        breakEnd: breakEnd || undefined,
+      });
+      return;
+    }
+
     // Validación: startTime debe ser menor que endTime
     if (startTime >= endTime) {
       toast.error('La hora de inicio debe ser menor que la hora de fin');
@@ -153,6 +165,20 @@ function DayScheduleRow({ label, dayValue, currentSchedule, onSave, isSaving }: 
     });
   };
 
+  // Auto-save cuando cambia el switch
+  const handleSwitchChange = (checked: boolean) => {
+    setEnabled(checked);
+    // Save immediately with new enabled state
+    onSave({
+      dayOfWeek: dayValue,
+      enabled: checked,
+      startTime,
+      endTime,
+      breakStart: breakStart || undefined,
+      breakEnd: breakEnd || undefined,
+    });
+  };
+
   return (
     <Card className={!enabled ? 'opacity-70 bg-muted/30' : ''}>
       <CardContent className="p-4 sm:p-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
@@ -160,12 +186,14 @@ function DayScheduleRow({ label, dayValue, currentSchedule, onSave, isSaving }: 
         <div className="flex items-center gap-4 min-w-[150px]">
           <Switch
             checked={enabled}
-            onCheckedChange={setEnabled}
+            onCheckedChange={handleSwitchChange}
             id={`day-${dayValue}`}
+            disabled={isSaving}
           />
           <Label htmlFor={`day-${dayValue}`} className="text-base font-medium cursor-pointer">
             {label}
           </Label>
+          {isSaving && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </div>
 
         {enabled && (
@@ -178,6 +206,8 @@ function DayScheduleRow({ label, dayValue, currentSchedule, onSave, isSaving }: 
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
+                  onBlur={validateAndSave}
+                  disabled={isSaving}
                   className="w-28"
                 />
                 <span className="text-muted-foreground text-sm">a</span>
@@ -185,6 +215,8 @@ function DayScheduleRow({ label, dayValue, currentSchedule, onSave, isSaving }: 
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
+                  onBlur={validateAndSave}
+                  disabled={isSaving}
                   className="w-28"
                 />
               </div>
@@ -197,6 +229,8 @@ function DayScheduleRow({ label, dayValue, currentSchedule, onSave, isSaving }: 
                   type="time"
                   value={breakStart}
                   onChange={(e) => setBreakStart(e.target.value)}
+                  onBlur={validateAndSave}
+                  disabled={isSaving}
                   className="w-28"
                 />
                 <span className="text-muted-foreground text-sm">a</span>
@@ -204,21 +238,11 @@ function DayScheduleRow({ label, dayValue, currentSchedule, onSave, isSaving }: 
                   type="time"
                   value={breakEnd}
                   onChange={(e) => setBreakEnd(e.target.value)}
+                  onBlur={validateAndSave}
+                  disabled={isSaving}
                   className="w-28"
                 />
               </div>
-            </div>
-
-            <div className="flex-1 md:text-right w-full md:w-auto mt-2 md:mt-0">
-              <Button
-                onClick={handleSave}
-                disabled={isSaving}
-                variant="secondary"
-                size="sm"
-              >
-                {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
-                {isSaving ? 'Guardando' : 'Guardar'}
-              </Button>
             </div>
           </div>
         )}
