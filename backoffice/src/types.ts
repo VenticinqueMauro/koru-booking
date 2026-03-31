@@ -80,6 +80,9 @@ export interface WidgetSettings {
     timezone: string;
     // Notificaciones
     notifyEmail: string;
+    // Integración E-commerce
+    ecommerceMode: boolean;
+    reservationTTL: number;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -99,6 +102,9 @@ export interface UpdateWidgetSettingsInput {
     timezone: string;
     // Notificaciones
     notifyEmail: string;
+    // Integración E-commerce
+    ecommerceMode: boolean;
+    reservationTTL: number;
 }
 
 export type ApiResponse<T = any> = T;
