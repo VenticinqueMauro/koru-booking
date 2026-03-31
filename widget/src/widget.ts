@@ -1,5 +1,5 @@
 import { KoruWidget, WidgetConfig } from '@redclover/koru-sdk';
-import { createApiClient, APIClient, Service, BookingResponse, WidgetSettings } from './api/client';
+import { createApiClient, APIClient, Service, BookingResponse, ReservationResponse, WidgetSettings } from './api/client';
 import { ServiceSelector } from './components/ServiceSelector';
 import { DateTimePicker } from './components/DateTimePicker';
 import { CustomerForm, CustomerData } from './components/CustomerForm';
@@ -14,9 +14,11 @@ export interface BookingWidgetConfig extends WidgetConfig {
   offsetX?: number;
   offsetY?: number;
   layout?: 'list' | 'grid' | 'button';
+  ecommerceMode?: boolean;
+  reservationTTL?: number;
 }
 
-type Step = 'service' | 'datetime' | 'form' | 'confirmation';
+type Step = 'service' | 'datetime' | 'form' | 'confirmation' | 'ecommerce-confirmation';
 
 export class BookingWidget extends KoruWidget {
   private widgetContainer: HTMLDivElement | null = null;
@@ -28,6 +30,7 @@ export class BookingWidget extends KoruWidget {
   private selectedDate: string = '';
   private selectedTime: string = '';
   private bookingResult: BookingResponse | null = null;
+  private reservationResult: ReservationResponse | null = null;
   private widgetConfig: BookingWidgetConfig | null = null;
   private isOpen: boolean = false;
   private apiClient!: APIClient;
@@ -90,6 +93,8 @@ export class BookingWidget extends KoruWidget {
         offsetX: settings.offsetX,
         offsetY: settings.offsetY,
         layout: settings.layout,
+        ecommerceMode: settings.ecommerceMode,
+        reservationTTL: settings.reservationTTL,
       };
     } catch (error) {
       console.warn('⚠️ Could not load settings from backend, using defaults:', error);
@@ -386,7 +391,46 @@ export class BookingWidget extends KoruWidget {
           this.confirmation.render(stepContainer);
         }
         break;
+
+      case 'ecommerce-confirmation':
+        if (this.reservationResult && this.selectedService) {
+          this.renderEcommerceConfirmation(stepContainer, accentColor, config);
+        }
+        break;
     }
+  }
+
+  private renderEcommerceConfirmation(container: HTMLElement, accentColor: string, config: BookingWidgetConfig): void {
+    const expiresAt = this.reservationResult ? new Date(this.reservationResult.expiresAt) : null;
+    const expiresText = expiresAt
+      ? expiresAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    container.innerHTML = `
+      <div style="padding: 32px 24px; text-align: center; min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;">
+        <div style="
+          width: 56px; height: 56px; border-radius: 50%;
+          background: ${accentColor}20; display: flex; align-items: center; justify-content: center;
+          color: ${accentColor}; font-size: 28px;
+        ">⏳</div>
+        <div>
+          <h3 style="font-size: 18px; font-weight: 600; color: #0f172a; margin: 0 0 8px;">Turno reservado temporalmente</h3>
+          <p style="font-size: 14px; color: #64748b; margin: 0; line-height: 1.5;">
+            Tu turno del <strong>${this.selectedDate}</strong> a las <strong>${this.selectedTime}</strong> está reservado.
+          </p>
+          ${expiresText ? `<p style="font-size: 13px; color: #94a3b8; margin: 8px 0 0;">Expira a las ${expiresText} si no completás la compra.</p>` : ''}
+        </div>
+        <p style="font-size: 13px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin: 0; line-height: 1.5;">
+          Completá tu compra para confirmar el turno. Una vez procesado el pago, recibirás la confirmación por email.
+        </p>
+        <button class="kb-reset-btn" style="
+          background: none; border: 1px solid #e2e8f0; border-radius: 8px;
+          padding: 10px 20px; font-size: 14px; color: #64748b; cursor: pointer;
+        ">Elegir otro turno</button>
+      </div>
+    `;
+
+    container.querySelector('.kb-reset-btn')?.addEventListener('click', () => this.resetWidget(config));
   }
 
   private clearCurrentComponent(): void {
@@ -411,7 +455,36 @@ export class BookingWidget extends KoruWidget {
     this.log('Date/Time selected', { date, time });
     this.selectedDate = date;
     this.selectedTime = time;
-    this.goToStep('form', config);
+    if (config.ecommerceMode) {
+      this.handleEcommerceReserve(config);
+    } else {
+      this.goToStep('form', config);
+    }
+  }
+
+  private async handleEcommerceReserve(config: BookingWidgetConfig): Promise<void> {
+    if (!this.selectedService || !this.widgetContainer) return;
+
+    this.showLoading();
+
+    try {
+      this.reservationResult = await this.apiClient.createReservation({
+        serviceId: this.selectedService.id,
+        date: this.selectedDate,
+        time: this.selectedTime,
+        ttlMinutes: config.reservationTTL,
+      });
+
+      this.track('reservation_created', {
+        serviceId: this.selectedService.id,
+        date: this.selectedDate,
+        time: this.selectedTime,
+      });
+
+      this.goToStep('ecommerce-confirmation', config);
+    } catch (error) {
+      this.showError((error as Error).message, () => this.goToStep('datetime', config));
+    }
   }
 
   private async handleFormSubmit(data: CustomerData, config: BookingWidgetConfig): Promise<void> {
@@ -457,6 +530,7 @@ export class BookingWidget extends KoruWidget {
     this.selectedDate = '';
     this.selectedTime = '';
     this.bookingResult = null;
+    this.reservationResult = null;
     this.goToStep('service', config);
   }
 

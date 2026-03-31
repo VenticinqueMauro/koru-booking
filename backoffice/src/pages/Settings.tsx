@@ -35,6 +35,9 @@ export default function Settings() {
     timezone: 'America/Argentina/Buenos_Aires',
     // Notificaciones
     notifyEmail: '',
+    // Integración E-commerce
+    ecommerceMode: false,
+    reservationTTL: 30,
   });
 
   const { data: response, isLoading, error } = useQuery({
@@ -55,6 +58,8 @@ export default function Settings() {
         stepInterval: response.stepInterval || 30,
         timezone: response.timezone || 'America/Argentina/Buenos_Aires',
         notifyEmail: response.notifyEmail || '',
+        ecommerceMode: response.ecommerceMode ?? false,
+        reservationTTL: response.reservationTTL ?? 30,
       });
     }
   }, [response]);
@@ -71,10 +76,10 @@ export default function Settings() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'number' ? Number(value) : value
+      [name]: type === 'number' ? Number(value) : type === 'checkbox' ? checked : value
     }));
   };
 
@@ -321,6 +326,51 @@ export default function Settings() {
                   placeholder="admin@example.com"
                 />
                 <p className="text-xs text-muted-foreground">Recibirás alertas de nuevas reservas aquí</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Integración E-commerce */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Integración E-commerce</CardTitle>
+              <CardDescription>Reservas temporales para flujos de pago (VTEX, Shopify)</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="ecommerceMode"
+                  name="ecommerceMode"
+                  checked={formData.ecommerceMode}
+                  onChange={handleChange}
+                  className="mt-1 h-4 w-4 cursor-pointer"
+                />
+                <div>
+                  <Label htmlFor="ecommerceMode" className="cursor-pointer font-medium">
+                    Modo E-commerce
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    El widget reserva el slot temporalmente en vez de confirmarlo. El turno se confirma cuando se aprueba el pago.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-w-xs">
+                <Label htmlFor="reservationTTL">TTL de reserva temporal (minutos)</Label>
+                <Input
+                  id="reservationTTL"
+                  type="number"
+                  name="reservationTTL"
+                  value={formData.reservationTTL}
+                  onChange={handleChange}
+                  min={5}
+                  max={1440}
+                  disabled={!formData.ecommerceMode}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Tiempo que el slot queda bloqueado esperando el pago. Si no se paga, se libera automáticamente.
+                </p>
               </div>
             </CardContent>
           </Card>

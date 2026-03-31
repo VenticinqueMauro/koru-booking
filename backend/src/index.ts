@@ -12,6 +12,8 @@ import bookingsRoutes from './routes/bookings.js';
 import slotsRoutes from './routes/slots.js';
 import schedulesRoutes from './routes/schedules.js';
 import settingsRoutes from './routes/settings.js';
+import reservationsRoutes from './routes/reservations.js';
+import webhooksRoutes from './routes/webhooks.js';
 
 const app = express();
 const PORT = env.PORT;
@@ -51,6 +53,8 @@ app.use('/api/bookings', bookingsRoutes);
 app.use('/api/slots', slotsRoutes);
 app.use('/api/schedules', schedulesRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/reservations', reservationsRoutes);
+app.use('/api/webhooks', webhooksRoutes);
 
 // Error handler (debe ir al final)
 app.use(errorHandler);

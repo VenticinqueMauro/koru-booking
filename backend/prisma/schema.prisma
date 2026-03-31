@@ -27,11 +27,12 @@ model Account {
   updatedAt        DateTime @updatedAt
 
   // Relations
-  services  Service[]
-  bookings  Booking[]
-  schedules Schedule[]
-  settings  WidgetSettings?
-  users     User[]     // Multiple users can be associated with an account
+  services     Service[]
+  bookings     Booking[]
+  schedules    Schedule[]
+  settings     WidgetSettings?
+  users        User[]     // Multiple users can be associated with an account
+  reservations BookingReservation[]
 
   @@unique([websiteId, appId])
   @@index([websiteId])
@@ -81,7 +82,8 @@ model Service {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   
-  bookings  Booking[]
+  bookings     Booking[]
+  reservations BookingReservation[]
 
   @@index([accountId, active])  // Composite index for efficient queries
   @@index([active])
@@ -123,6 +125,8 @@ model Booking {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  reservations BookingReservation[]
+
   @@unique([accountId, serviceId, date, time]) // Prevent duplicates per account
   @@index([accountId, date])
   @@index([accountId, status])
@@ -153,7 +157,38 @@ model WidgetSettings {
   // Notificaciones
   notifyEmail  String
 
+  // Integración E-commerce
+  ecommerceMode  Boolean @default(false)
+  reservationTTL Int     @default(30) // minutos
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model BookingReservation {
+  id              String   @id @default(uuid())
+  accountId       String
+  account         Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  serviceId       String
+  service         Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  date            DateTime
+  time            String   // HH:mm
+  customerName    String?
+  customerEmail   String?
+  customerPhone   String?
+  notes           String?
+  externalOrderId String?  // Se llena cuando el ecommerce asocia un pedido
+  status          String   @default("pending") // pending | confirmed | expired | cancelled
+  expiresAt       DateTime
+  bookingId       String?  // Referencia al Booking definitivo cuando se confirma
+  booking         Booking? @relation(fields: [bookingId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([accountId, status])
+  @@index([externalOrderId])
+  @@index([status, expiresAt])
 }
 

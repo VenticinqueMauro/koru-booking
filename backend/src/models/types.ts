@@ -52,6 +52,39 @@ export const UpdateWidgetSettingsSchema = z.object({
 
   // Notificaciones
   notifyEmail: z.string().email(),
+
+  // Integración E-commerce
+  ecommerceMode: z.boolean().default(false),
+  reservationTTL: z.number().int().min(5).max(1440).default(30),
+});
+
+export const CreateReservationSchema = z.object({
+  serviceId: z.string().uuid(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido (YYYY-MM-DD)'),
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Formato de hora inválido (HH:mm)'),
+  customerName: z.string().optional(),
+  customerEmail: z.string().email().optional(),
+  customerPhone: z.string().optional(),
+  ttlMinutes: z.number().int().min(5).max(1440).optional(),
+});
+
+export const EcommerceWebhookSchema = z.object({
+  type: z.enum(['payment_approved', 'order_cancelled', 'order_invoiced']),
+  platform: z.enum(['vtex', 'shopify']),
+  externalOrderId: z.string(),
+  timestamp: z.string(),
+  customer: z.object({
+    name: z.string().optional(),
+    email: z.string().email().optional(),
+    phone: z.string().optional(),
+  }).optional(),
+  items: z.array(z.object({
+    externalProductId: z.string(),
+    quantity: z.number(),
+    price: z.number(),
+  })).optional(),
+  metadata: z.record(z.string()).optional(),
+  raw: z.any().optional(),
 });
 
 export const GetSlotsQuerySchema = z.object({
@@ -68,6 +101,8 @@ export type UpdateScheduleInput = z.infer<typeof UpdateScheduleSchema>;
 export type CreateBookingInput = z.infer<typeof CreateBookingSchema>;
 export type UpdateWidgetSettingsInput = z.infer<typeof UpdateWidgetSettingsSchema>;
 export type GetSlotsQuery = z.infer<typeof GetSlotsQuerySchema>;
+export type CreateReservationInput = z.infer<typeof CreateReservationSchema>;
+export type EcommerceWebhookEvent = z.infer<typeof EcommerceWebhookSchema>;
 
 // API Response Types
 

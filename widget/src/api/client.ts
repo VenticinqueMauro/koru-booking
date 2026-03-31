@@ -47,6 +47,24 @@ export interface WidgetSettings {
   stepInterval: number;
   timezone: string;
   notifyEmail: string;
+  ecommerceMode: boolean;
+  reservationTTL: number;
+}
+
+export interface ReservationRequest {
+  serviceId: string;
+  date: string;
+  time: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  ttlMinutes?: number;
+}
+
+export interface ReservationResponse {
+  reservationId: string;
+  status: 'pending';
+  expiresAt: string;
 }
 
 export interface KoruCredentials {
@@ -138,6 +156,24 @@ export class APIClient {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Error al crear reserva');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Crea una reserva temporal (modo ecommerce)
+   */
+  async createReservation(reservation: ReservationRequest): Promise<ReservationResponse> {
+    const response = await fetch(`${this.baseURL}/api/reservations`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(reservation),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al crear reserva temporal');
     }
 
     return response.json();

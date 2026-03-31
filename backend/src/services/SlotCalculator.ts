@@ -13,6 +13,16 @@ export class SlotCalculator {
    * 5. Aplicar buffer post-servicio
    */
   async calculateAvailableSlots(accountId: string, serviceId: string, dateString: string, stepInterval?: number): Promise<string[]> {
+    // 0. Lazy cleanup: liberar reservas temporales expiradas
+    await prisma.bookingReservation.updateMany({
+      where: {
+        accountId,
+        status: 'pending',
+        expiresAt: { lt: new Date() },
+      },
+      data: { status: 'expired' },
+    });
+
     // 1. Obtener el servicio (scoped by account)
     const service = await prisma.service.findFirst({
       where: {
@@ -65,6 +75,26 @@ export class SlotCalculator {
       },
     });
 
+    // 5b. Obtener reservas temporales activas para esa fecha
+    const activeReservations = await prisma.bookingReservation.findMany({
+      where: {
+        accountId,
+        date,
+        status: 'pending',
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        serviceId: true,
+        time: true,
+        service: {
+          select: {
+            duration: true,
+            buffer: true,
+          },
+        },
+      },
+    });
+
     // 6. Generar todos los slots posibles
     const allSlots = this.generateTimeSlots(
       schedule.startTime,
@@ -75,10 +105,11 @@ export class SlotCalculator {
       schedule.breakEnd
     );
 
-    // 7. Filtrar slots ocupados
+    // 7. Filtrar slots ocupados (bookings + reservas temporales activas)
     const occupiedSlots = new Set<string>();
+    const allOccupied = [...existingBookings, ...activeReservations];
 
-    existingBookings.forEach((booking) => {
+    allOccupied.forEach((booking) => {
       const bookingStartTime = booking.time;
       const totalDuration = booking.service.duration + booking.service.buffer;
 
