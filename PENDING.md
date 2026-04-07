@@ -1,5 +1,12 @@
 # Pendientes — Koru Booking
 
+## Estilos y configuración visual
+
+- [ ] **Cambios de estilos/colores no se reflejan en la tienda** — al modificar y guardar configuración visual (colores, estilos) desde el backoffice de koru-booking, los cambios no llegan al widget en la tienda. Investigar:
+  - ¿El widget cachea la config del backend? (ver `options: { cache: true, cacheDuration: 300 }` en koru-triggers — verificar si koru-booking tiene caché similar)
+  - ¿El backend invalida la caché al guardar?
+  - ¿La config guardada en backoffice es la misma que devuelve el endpoint que consume el widget?
+
 ## Flujo Ecommerce / Reservas pendientes
 
 - [ ] **Estado "pendiente" para reservas en modo ecommerce** — actualmente las reservas creadas en `ecommerceMode` quedan en un estado ambiguo hasta que llega el webhook de pago aprobado. Cambios necesarios:
