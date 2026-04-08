@@ -84,14 +84,30 @@ export class UserSyncService {
                 // This is critical for multi-tenant correctness: always use the account
                 // that was already created for the widget on the store, not blindly websites[0].
                 const websiteIds = websites.map(w => w.id);
-                const existingAccount = await prisma.account.findFirst({
+                // Search by websiteId only — intentionally NOT filtering by appId.
+                // The backoffice login uses a different Koru app (app_id) than the widget,
+                // so filtering by appId would miss the widget-created account.
+                // Among multiple matches, prefer the account that has real WidgetSettings
+                // (i.e. has services/bookings = was actually used), falling back to newest.
+                const matchingAccounts = await prisma.account.findMany({
                     where: {
                         websiteId: { in: websiteIds },
-                        appId,
                         active: true,
                     },
-                    orderBy: { createdAt: 'asc' }, // prefer the oldest/most established account
+                    include: {
+                        _count: { select: { services: true, bookings: true } },
+                    },
                 });
+
+                // Sort: most activity first, then most recently updated
+                matchingAccounts.sort((a, b) => {
+                    const activityA = a._count.services + a._count.bookings;
+                    const activityB = b._count.services + b._count.bookings;
+                    if (activityB !== activityA) return activityB - activityA;
+                    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+                });
+
+                const existingAccount = matchingAccounts[0] ?? null;
 
                 let primaryWebsite: KoruWebsiteInfo;
 
