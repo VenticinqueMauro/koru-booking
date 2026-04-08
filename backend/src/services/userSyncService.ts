@@ -80,24 +80,42 @@ export class UserSyncService {
 
             // Link account based on websites from Koru response
             if (websites.length > 0) {
-                // Use first website (multi-website selector can be added later)
-                const primaryWebsite = websites[0];
+                // Find an existing account matching ANY of the user's websites + appId.
+                // This is critical for multi-tenant correctness: always use the account
+                // that was already created for the widget on the store, not blindly websites[0].
+                const websiteIds = websites.map(w => w.id);
+                const existingAccount = await prisma.account.findFirst({
+                    where: {
+                        websiteId: { in: websiteIds },
+                        appId,
+                        active: true,
+                    },
+                    orderBy: { createdAt: 'asc' }, // prefer the oldest/most established account
+                });
 
-                console.log(`✅ Using website: ${primaryWebsite.id} (${primaryWebsite.url})`);
+                let primaryWebsite: KoruWebsiteInfo;
 
-                // Find or create Account
-                account = await accountInitService.findOrCreateAccount(
-                    primaryWebsite.id,
-                    appId,
-                    {
-                        businessName: name || email,
-                        email: email,
-                        referenceWebsite: primaryWebsite.url,
-                        config: {},
-                    }
-                );
+                if (existingAccount) {
+                    account = existingAccount;
+                    primaryWebsite = websites.find(w => w.id === existingAccount.websiteId) || websites[0];
+                    console.log(`✅ Matched existing account ${account.id} via websiteId: ${account.websiteId}`);
+                } else {
+                    // No existing account found — create one using the first website
+                    primaryWebsite = websites[0];
+                    console.log(`🆕 No existing account found, creating with websiteId: ${primaryWebsite.id}`);
+                    account = await accountInitService.findOrCreateAccount(
+                        primaryWebsite.id,
+                        appId,
+                        {
+                            businessName: name || email,
+                            email: email,
+                            referenceWebsite: primaryWebsite.url,
+                            config: {},
+                        }
+                    );
+                }
 
-                // Update reference website URL if changed
+                // Update referenceWebsite if changed
                 if (account && primaryWebsite.url && account.referenceWebsite !== primaryWebsite.url) {
                     await prisma.account.update({
                         where: { id: account.id },
@@ -112,14 +130,18 @@ export class UserSyncService {
             }
             // Admins without websites have system-wide access (account = null)
 
-            // Update notifyEmail if it's still the default placeholder
+            // Fix notifyEmail if it's still a placeholder or was incorrectly set to a URL
             if (account && email) {
                 const settings = await prisma.widgetSettings.findUnique({
                     where: { accountId: account.id },
                     select: { notifyEmail: true },
                 });
 
-                if (settings?.notifyEmail === 'admin@example.com') {
+                const isInvalidEmail = !settings?.notifyEmail ||
+                    settings.notifyEmail === 'admin@example.com' ||
+                    settings.notifyEmail.startsWith('http');
+
+                if (isInvalidEmail) {
                     await prisma.widgetSettings.update({
                         where: { accountId: account.id },
                         data: { notifyEmail: email },

@@ -76,7 +76,7 @@ export const dualAuthMiddleware = async (
                     appId,
                     {
                         businessName: koruResponse.app?.name,
-                        email: koruResponse.website?.url,
+                        referenceWebsite: koruResponse.website?.url,
                         config: koruResponse.config || {},
                     }
                 );
