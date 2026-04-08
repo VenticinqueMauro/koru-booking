@@ -106,9 +106,18 @@ export const dualAuthMiddleware = async (
                 return;
             }
 
-            console.log(`✅ [Koru Auth] Request authenticated - accountId: ${account.id}, websiteId: ${account.websiteId}`);
+            // Multi-store: if this is a child account (widget installation on a specific store),
+            // resolve to the parent account so all data (services, bookings, settings)
+            // is read/written to the merchant's main account.
+            const resolvedAccountId = (account as any).parentAccountId || account.id;
 
-            req.accountId = account.id;
+            if ((account as any).parentAccountId) {
+                console.log(`✅ [Koru Auth] Child account ${account.id} resolved to parent ${resolvedAccountId}`);
+            } else {
+                console.log(`✅ [Koru Auth] Request authenticated - accountId: ${resolvedAccountId}, websiteId: ${account.websiteId}`);
+            }
+
+            req.accountId = resolvedAccountId;
             req.websiteId = account.websiteId;
             req.authType = 'koru';
 

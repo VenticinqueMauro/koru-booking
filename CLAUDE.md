@@ -73,7 +73,21 @@ The widget extends `KoruWidget` from `@redclover/koru-sdk`:
 - **Production mode**: Full Koru SDK authentication and config loading
 - The widget is framework-agnostic (Vanilla JS) and can be embedded anywhere
 
-### 4. Backoffice Without Koru SDK
+### 4. Multi-Store Account Hierarchy
+
+**IMPORTANT**: Accounts follow a parent/child hierarchy for merchants with multiple stores.
+
+- **Parent account**: the merchant's main account (has services, schedules, real settings). This is the account the backoffice always operates on.
+- **Child accounts**: auto-created when the widget loads on a specific store (VTEX, etc.). They hold the store's `websiteId`/`appId` but no independent data.
+
+**How it works:**
+- `syncKoruUser` (backoffice login): finds all accounts matching the user's Koru `website_ids`, picks the one with the most activity as parent, and links the rest as children via `parentAccountId`.
+- `dualAuthMiddleware` (widget Koru auth): after finding the store's account, resolves `req.accountId = account.parentAccountId || account.id` so all widget requests hit the parent's data.
+- Result: services, schedules, bookings, and settings are always read from the parent account regardless of which store triggered the request.
+
+**Phase 2 (not yet implemented):** Per-store visual overrides (accentColor, triggerText, position) that merge on top of the parent's settings. See PENDING.md.
+
+### 5. Backoffice Without Koru SDK
 **IMPORTANT**: The backoffice was recently decoupled from Koru SDK:
 - It is now open access without authentication
 - Do NOT add `@redclover/koru-react-sdk` dependency back

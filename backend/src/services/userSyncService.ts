@@ -78,66 +78,70 @@ export class UserSyncService {
 
             let account: any = null;
 
-            // Link account based on websites from Koru response
+            // Multi-store account resolution
             if (websites.length > 0) {
-                // Find an existing account matching ANY of the user's websites + appId.
-                // This is critical for multi-tenant correctness: always use the account
-                // that was already created for the widget on the store, not blindly websites[0].
                 const websiteIds = websites.map(w => w.id);
-                // Search by websiteId only — intentionally NOT filtering by appId.
-                // The backoffice login uses a different Koru app (app_id) than the widget,
-                // so filtering by appId would miss the widget-created account.
-                // Among multiple matches, prefer the account that has real WidgetSettings
-                // (i.e. has services/bookings = was actually used), falling back to newest.
+
+                // Find ALL existing accounts for this user's websites.
+                // Intentionally no appId filter: backoffice and widget may use different Koru apps.
                 const matchingAccounts = await prisma.account.findMany({
-                    where: {
-                        websiteId: { in: websiteIds },
-                        active: true,
-                    },
-                    include: {
-                        _count: { select: { services: true, bookings: true } },
-                    },
+                    where: { websiteId: { in: websiteIds }, active: true },
+                    include: { _count: { select: { services: true, bookings: true } } },
                 });
 
-                // Sort: most activity first, then most recently updated
-                matchingAccounts.sort((a, b) => {
-                    const activityA = a._count.services + a._count.bookings;
-                    const activityB = b._count.services + b._count.bookings;
-                    if (activityB !== activityA) return activityB - activityA;
-                    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-                });
+                if (matchingAccounts.length > 0) {
+                    // The parent is the account with the most activity (services + bookings).
+                    // Ties broken by oldest creation date (most established).
+                    matchingAccounts.sort((a: any, b: any) => {
+                        const diff = (b._count.services + b._count.bookings) - (a._count.services + a._count.bookings);
+                        return diff !== 0 ? diff : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+                    });
 
-                const existingAccount = matchingAccounts[0] ?? null;
+                    const parentAccount = matchingAccounts[0];
+                    account = parentAccount;
+                    console.log(`✅ Parent account: ${parentAccount.id} (websiteId: ${parentAccount.websiteId}, services: ${parentAccount._count.services})`);
 
-                let primaryWebsite: KoruWebsiteInfo;
+                    // Link every other account as a child of the parent.
+                    // This powers the multi-store hierarchy: widget installs on stores
+                    // resolve to the merchant's main account via dualAuth middleware.
+                    const childAccounts = matchingAccounts.slice(1);
+                    if (childAccounts.length > 0) {
+                        const idsToLink = childAccounts
+                            .filter((a: any) => a.parentAccountId !== parentAccount.id)
+                            .map((a: any) => a.id);
 
-                if (existingAccount) {
-                    account = existingAccount;
-                    primaryWebsite = websites.find(w => w.id === existingAccount.websiteId) || websites[0];
-                    console.log(`✅ Matched existing account ${account.id} via websiteId: ${account.websiteId}`);
+                        if (idsToLink.length > 0) {
+                            await prisma.account.updateMany({
+                                where: { id: { in: idsToLink } },
+                                data: { parentAccountId: parentAccount.id },
+                            });
+                            console.log(`✅ Linked ${idsToLink.length} child account(s) → parent ${parentAccount.id}`);
+                        }
+                    }
                 } else {
-                    // No existing account found — create one using the first website
-                    primaryWebsite = websites[0];
+                    // No existing accounts — create a new one with the first website
+                    const primaryWebsite = websites[0];
                     console.log(`🆕 No existing account found, creating with websiteId: ${primaryWebsite.id}`);
                     account = await accountInitService.findOrCreateAccount(
                         primaryWebsite.id,
                         appId,
                         {
                             businessName: name || email,
-                            email: email,
+                            email,
                             referenceWebsite: primaryWebsite.url,
                             config: {},
                         }
                     );
                 }
 
-                // Update referenceWebsite if changed
-                if (account && primaryWebsite.url && account.referenceWebsite !== primaryWebsite.url) {
+                // Keep referenceWebsite in sync
+                const matchedWebsite = websites.find(w => w.id === account.websiteId) || websites[0];
+                if (matchedWebsite?.url && account.referenceWebsite !== matchedWebsite.url) {
                     await prisma.account.update({
                         where: { id: account.id },
-                        data: { referenceWebsite: primaryWebsite.url },
+                        data: { referenceWebsite: matchedWebsite.url },
                     });
-                    console.log(`✅ Updated referenceWebsite to ${primaryWebsite.url}`);
+                    console.log(`✅ Updated referenceWebsite to ${matchedWebsite.url}`);
                 }
             } else if (role !== 'admin') {
                 // Non-admin users MUST have at least one website

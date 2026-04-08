@@ -26,6 +26,12 @@ model Account {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  // Multi-store hierarchy: a parent account is the merchant's main account.
+  // Child accounts are per-store widget installations that resolve to the parent.
+  parentAccountId  String?
+  parent           Account?  @relation("AccountHierarchy", fields: [parentAccountId], references: [id])
+  children         Account[] @relation("AccountHierarchy")
+
   // Relations
   services     Service[]
   bookings     Booking[]
@@ -38,6 +44,7 @@ model Account {
   @@index([websiteId])
   @@index([active])
   @@index([email])
+  @@index([parentAccountId])
 }
 
 model User {
