@@ -94,6 +94,32 @@ export class ReservationsController {
     }
   }
 
+  async getAll(req: DualAuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.accountId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const reservations = await prisma.bookingReservation.findMany({
+        where: {
+          accountId: req.accountId,
+          status: 'pending',
+          expiresAt: { gt: new Date() },
+        },
+        include: {
+          service: { select: { name: true, duration: true } },
+        },
+        orderBy: [{ date: 'asc' }, { time: 'asc' }],
+      });
+
+      res.json(reservations);
+    } catch (error) {
+      console.error('Error fetching reservations:', error);
+      res.status(500).json({ error: 'Error al cargar reservas temporales' });
+    }
+  }
+
   async getById(req: DualAuthRequest, res: Response): Promise<void> {
     try {
       if (!req.accountId) {

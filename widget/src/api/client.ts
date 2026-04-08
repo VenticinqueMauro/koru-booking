@@ -185,6 +185,7 @@ export class APIClient {
   async getSettings(): Promise<WidgetSettings> {
     const response = await fetch(`${this.baseURL}/api/settings`, {
       headers: this.getHeaders(),
+      cache: 'no-store',
     });
 
     if (!response.ok) {

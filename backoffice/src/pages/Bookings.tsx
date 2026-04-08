@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { bookingsApi } from '../api/bookings';
-import { Booking } from '../types';
-import { format, parseISO } from 'date-fns';
+import { reservationsApi } from '../api/reservations';
+import { Booking, BookingReservation } from '../types';
+import { format, parseISO, differenceInMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Layout } from '../components/Layout';
 import { Button } from '@/components/ui/button';
@@ -16,69 +18,83 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Clock } from 'lucide-react';
+
+type Tab = 'confirmed' | 'pending';
+
+function timeRemaining(expiresAt: string): string {
+  const mins = differenceInMinutes(parseISO(expiresAt), new Date());
+  if (mins <= 0) return 'Vencida';
+  if (mins === 1) return '1 min restante';
+  return `${mins} min restantes`;
+}
 
 export default function Bookings() {
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<Tab>('confirmed');
 
-  const { data: response, isLoading, error } = useQuery({
+  const { data: bookings = [], isLoading: loadingBookings, error: errorBookings } = useQuery({
     queryKey: ['bookings'],
     queryFn: bookingsApi.getAll,
   });
 
-  const cancelMutation = useMutation({
+  const { data: reservations = [], isLoading: loadingReservations, error: errorReservations } = useQuery({
+    queryKey: ['reservations', 'pending'],
+    queryFn: reservationsApi.getPending,
+    refetchInterval: 60_000, // refrescar cada minuto para mantener TTL actualizado
+  });
+
+  const cancelBookingMutation = useMutation({
     mutationFn: bookingsApi.cancel,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       toast.success('Reserva cancelada correctamente');
     },
-    onError: () => {
-      toast.error('Error al cancelar la reserva');
-    },
+    onError: () => toast.error('Error al cancelar la reserva'),
   });
 
-  const handleCancel = (id: string) => {
+  const cancelReservationMutation = useMutation({
+    mutationFn: reservationsApi.cancel,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations', 'pending'] });
+      toast.success('Reserva temporal cancelada');
+    },
+    onError: () => toast.error('Error al cancelar la reserva temporal'),
+  });
+
+  const handleCancelBooking = (id: string) => {
     if (confirm('¿Estás seguro de que deseas cancelar esta reserva?')) {
-      cancelMutation.mutate(id);
+      cancelBookingMutation.mutate(id);
     }
   };
 
-  const bookings = response || [];
-
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case 'confirmed':
-        return 'default'; // Success green usually implies default or secondary. I will use 'default' (primary color) or 'secondary' if I want subtle. Or custom class.
-      // Actually shadcn default is black. I'll use outline or secondary + custom class if needed. 
-      // For now, mapping: 'confirmed' -> 'default' (or maybe I should add a 'success' variant to badge component? I'll stick to standard variants for now and use className if needed for color).
-      // Let's use 'default' for confirmed. 
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'secondary';
+  const handleCancelReservation = (id: string) => {
+    if (confirm('¿Cancelar esta reserva pendiente de pago? El slot quedará libre.')) {
+      cancelReservationMutation.mutate(id);
     }
   };
 
-  // Helper to add specific colors if needed, since Shadcn variants are semantic
-  const getStatusClassName = (status: string) => {
-    switch (status) {
-      case 'confirmed': return "bg-green-500 hover:bg-green-600 border-transparent text-white";
-      case 'cancelled': return ""; // destructive handles it
-      default: return "bg-yellow-500 hover:bg-yellow-600 border-transparent text-white";
-    }
-  }
-
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'Confirmada';
-      case 'cancelled':
-        return 'Cancelada';
-      default:
-        return 'Pendiente';
-    }
+  const getBookingStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    if (status === 'cancelled') return 'destructive';
+    return 'default';
   };
+
+  const getBookingStatusClassName = (status: string) => {
+    if (status === 'confirmed') return 'bg-green-500 hover:bg-green-600 border-transparent text-white';
+    if (status === 'cancelled') return '';
+    return 'bg-yellow-500 hover:bg-yellow-600 border-transparent text-white';
+  };
+
+  const getBookingStatusLabel = (status: string) => {
+    if (status === 'confirmed') return 'Confirmada';
+    if (status === 'cancelled') return 'Cancelada';
+    return 'Pendiente';
+  };
+
+  const isLoading = activeTab === 'confirmed' ? loadingBookings : loadingReservations;
+  const hasError = activeTab === 'confirmed' ? errorBookings : errorReservations;
+
+  const pendingCount = Array.isArray(reservations) ? reservations.length : 0;
 
   if (isLoading) {
     return (
@@ -90,7 +106,7 @@ export default function Bookings() {
     );
   }
 
-  if (error) {
+  if (hasError) {
     return (
       <Layout>
         <div className="flex h-[50vh] items-center justify-center text-destructive gap-2">
@@ -111,90 +127,190 @@ export default function Bookings() {
           </p>
         </header>
 
-        <Card>
-          <CardHeader className="px-4 sm:px-6 py-4 border-b">
-            <CardTitle className="text-base font-medium">Listado de Reservas</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px] sm:w-[300px]">Cliente</TableHead>
-                    <TableHead>Servicio</TableHead>
-                    <TableHead>Fecha y Hora</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bookings.length === 0 ? (
+        {/* Tabs */}
+        <div className="flex gap-2 border-b">
+          <button
+            onClick={() => setActiveTab('confirmed')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'confirmed'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Confirmadas
+          </button>
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+              activeTab === 'pending'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Pendientes de pago
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center justify-center rounded-full bg-yellow-500 text-white text-xs w-5 h-5">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Confirmed bookings */}
+        {activeTab === 'confirmed' && (
+          <Card>
+            <CardHeader className="px-4 sm:px-6 py-4 border-b">
+              <CardTitle className="text-base font-medium">Listado de Reservas</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
-                        No hay reservas registradas.
-                      </TableCell>
+                      <TableHead className="w-[200px] sm:w-[300px]">Cliente</TableHead>
+                      <TableHead>Servicio</TableHead>
+                      <TableHead>Fecha y Hora</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
-                  ) : (
-                    bookings.map((booking: Booking) => (
-                      <TableRow key={booking.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">
-                              {booking.customerName}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {booking.customerEmail}
-                            </div>
-                            {booking.customerPhone && (
-                              <div className="text-sm text-muted-foreground">
-                                {booking.customerPhone}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            {booking.service?.name || 'Servicio eliminado'}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium">
-                              {format(parseISO(booking.date), 'EEEE d MMMM yyyy', {
-                                locale: es,
-                              })}
-                            </span>
-                            <span className="text-sm text-muted-foreground">{booking.time} hs</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={getStatusVariant(booking.status)}
-                            className={getStatusClassName(booking.status)}
-                          >
-                            {getStatusLabel(booking.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {booking.status !== 'cancelled' && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleCancel(booking.id)}
-                              disabled={cancelMutation.isPending}
-                            >
-                              Cancelar
-                            </Button>
-                          )}
+                  </TableHeader>
+                  <TableBody>
+                    {(Array.isArray(bookings) ? bookings : []).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          No hay reservas registradas.
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                    ) : (
+                      (Array.isArray(bookings) ? bookings : []).map((booking: Booking) => (
+                        <TableRow key={booking.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{booking.customerName}</div>
+                              <div className="text-sm text-muted-foreground">{booking.customerEmail}</div>
+                              {booking.customerPhone && (
+                                <div className="text-sm text-muted-foreground">{booking.customerPhone}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                              {booking.service?.name || 'Servicio eliminado'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {format(parseISO(booking.date), 'EEEE d MMMM yyyy', { locale: es })}
+                              </span>
+                              <span className="text-sm text-muted-foreground">{booking.time} hs</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={getBookingStatusVariant(booking.status)}
+                              className={getBookingStatusClassName(booking.status)}
+                            >
+                              {getBookingStatusLabel(booking.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {booking.status !== 'cancelled' && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleCancelBooking(booking.id)}
+                                disabled={cancelBookingMutation.isPending}
+                              >
+                                Cancelar
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pending reservations */}
+        {activeTab === 'pending' && (
+          <Card>
+            <CardHeader className="px-4 sm:px-6 py-4 border-b">
+              <CardTitle className="text-base font-medium">Reservas pendientes de pago</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px] sm:w-[300px]">Cliente</TableHead>
+                      <TableHead>Servicio</TableHead>
+                      <TableHead>Fecha y Hora</TableHead>
+                      <TableHead>Expira en</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(Array.isArray(reservations) ? reservations : []).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          No hay reservas pendientes de pago.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      (Array.isArray(reservations) ? reservations : []).map((res: BookingReservation) => (
+                        <TableRow key={res.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{res.customerName || '—'}</div>
+                              <div className="text-sm text-muted-foreground">{res.customerEmail || '—'}</div>
+                              {res.customerPhone && (
+                                <div className="text-sm text-muted-foreground">{res.customerPhone}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                              {res.service?.name || 'Servicio eliminado'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {format(parseISO(res.date), 'EEEE d MMMM yyyy', { locale: es })}
+                              </span>
+                              <span className="text-sm text-muted-foreground">{res.time} hs</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5 text-yellow-600">
+                              <Clock className="h-3.5 w-3.5" />
+                              <span className="text-sm font-medium">{timeRemaining(res.expiresAt)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCancelReservation(res.id)}
+                              disabled={cancelReservationMutation.isPending}
+                            >
+                              Liberar slot
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </Layout>
   );

@@ -64,6 +64,22 @@ export interface CreateBookingInput {
     notes?: string;
 }
 
+export interface BookingReservation {
+    id: string;
+    serviceId: string;
+    service?: { name: string; duration: number };
+    date: string;
+    time: string;
+    customerName?: string;
+    customerEmail?: string;
+    customerPhone?: string;
+    notes?: string;
+    externalOrderId?: string;
+    status: 'pending' | 'confirmed' | 'expired' | 'cancelled';
+    expiresAt: string;
+    createdAt: string;
+}
+
 export interface WidgetSettings {
     id: string;
     // Apariencia

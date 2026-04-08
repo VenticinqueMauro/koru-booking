@@ -22,6 +22,8 @@ export class SettingsController {
                 where: { accountId: req.accountId },
             });
 
+            res.setHeader('Cache-Control', 'no-store');
+
             if (!settings) {
                 // Si no existe, devolvemos defaults (coincidiendo con schema prisma)
                 res.json({

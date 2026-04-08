@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
 import path from 'path';
+import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js';
 
 export default defineConfig({
+  plugins: [cssInjectedByJsPlugin()],
   base: '/',
   build: {
     cssCodeSplit: false,
