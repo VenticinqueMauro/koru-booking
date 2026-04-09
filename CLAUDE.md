@@ -91,7 +91,29 @@ If the merchant registers separate websites in KoruSuite for different domains (
 **Multi-store hierarchy (Phase 1 — implemented):**
 For merchants with multiple stores, `dualAuthMiddleware` resolves `req.accountId = account.parentAccountId || account.id`. `syncKoruUser` elects the most active account as parent and links the rest as children via `parentAccountId`. Phase 2 (per-store visual overrides) is pending — see PENDING.md.
 
-### 5. Backoffice Without Koru SDK
+### 5. Ecommerce Mode — Design Decisions
+
+When `ecommerceMode: true` in WidgetSettings, the booking flow changes from immediate confirmation to temporary reservation + post-payment confirmation.
+
+**Flow:**
+```
+Normal:     ServiceSelector → DateTimePicker → CustomerForm → Confirmed booking
+Ecommerce:  ServiceSelector → DateTimePicker → Temporary reservation → (payment) → Confirmed booking
+```
+
+**Key design decisions:**
+- `reservationId` travels in webhook `metadata` field (not searched by slot+time). The widget receives the `reservationId` after creating the temporary reservation and passes it to the ecommerce checkout (VTEX orderForm customData). koru-triggers Worker forwards it in `metadata` when dispatching the event to the booking backend.
+- **Lazy cleanup**: expired reservations are marked as `expired` at the start of `calculateAvailableSlots()`, before computing available slots. No cron jobs needed — every availability query self-cleans for that account.
+- **SlotCalculator** considers both confirmed bookings AND active `pending` reservations (status=pending, expiresAt>now) when blocking slots.
+- `ecommerceMode: false` by default — explicit opt-in per account from backoffice settings.
+
+**Endpoints:**
+- `POST /api/reservations` — create temporary reservation (widget, Koru auth)
+- `GET /api/reservations/:id` — check reservation status
+- `DELETE /api/reservations/:id` — cancel reservation
+- `POST /api/webhooks/ecommerce` — receive payment/cancel events from koru-triggers Worker
+
+### 6. Backoffice Without Koru SDK
 **IMPORTANT**: The backoffice was recently decoupled from Koru SDK:
 - It is now open access without authentication
 - Do NOT add `@redclover/koru-react-sdk` dependency back
