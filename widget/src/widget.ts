@@ -455,36 +455,7 @@ export class BookingWidget extends KoruWidget {
     this.log('Date/Time selected', { date, time });
     this.selectedDate = date;
     this.selectedTime = time;
-    if (config.ecommerceMode) {
-      this.handleEcommerceReserve(config);
-    } else {
-      this.goToStep('form', config);
-    }
-  }
-
-  private async handleEcommerceReserve(config: BookingWidgetConfig): Promise<void> {
-    if (!this.selectedService || !this.widgetContainer) return;
-
-    this.showLoading();
-
-    try {
-      this.reservationResult = await this.apiClient.createReservation({
-        serviceId: this.selectedService.id,
-        date: this.selectedDate,
-        time: this.selectedTime,
-        ttlMinutes: config.reservationTTL,
-      });
-
-      this.track('reservation_created', {
-        serviceId: this.selectedService.id,
-        date: this.selectedDate,
-        time: this.selectedTime,
-      });
-
-      this.goToStep('ecommerce-confirmation', config);
-    } catch (error) {
-      this.showError((error as Error).message, () => this.goToStep('datetime', config));
-    }
+    this.goToStep('form', config);
   }
 
   private async handleFormSubmit(data: CustomerData, config: BookingWidgetConfig): Promise<void> {
@@ -492,30 +463,50 @@ export class BookingWidget extends KoruWidget {
 
     if (!this.selectedService || !this.widgetContainer) return;
 
-    // Mostrar loading
     this.showLoading();
 
     try {
-      this.bookingResult = await this.apiClient.createBooking({
-        serviceId: this.selectedService.id,
-        date: this.selectedDate,
-        time: this.selectedTime,
-        customerName: data.name,
-        customerEmail: data.email,
-        customerPhone: data.phone,
-        notes: data.notes,
-      });
+      if (config.ecommerceMode) {
+        this.reservationResult = await this.apiClient.createReservation({
+          serviceId: this.selectedService.id,
+          date: this.selectedDate,
+          time: this.selectedTime,
+          customerName: data.name,
+          customerEmail: data.email,
+          customerPhone: data.phone,
+          ttlMinutes: config.reservationTTL,
+        });
 
-      this.log('Booking created', this.bookingResult);
-      this.track('booking_completed', {
-        serviceId: this.selectedService.id,
-        date: this.selectedDate,
-        time: this.selectedTime,
-      });
+        this.log('Reservation created', this.reservationResult);
+        this.track('reservation_created', {
+          serviceId: this.selectedService.id,
+          date: this.selectedDate,
+          time: this.selectedTime,
+        });
 
-      this.goToStep('confirmation', config);
+        this.goToStep('ecommerce-confirmation', config);
+      } else {
+        this.bookingResult = await this.apiClient.createBooking({
+          serviceId: this.selectedService.id,
+          date: this.selectedDate,
+          time: this.selectedTime,
+          customerName: data.name,
+          customerEmail: data.email,
+          customerPhone: data.phone,
+          notes: data.notes,
+        });
+
+        this.log('Booking created', this.bookingResult);
+        this.track('booking_completed', {
+          serviceId: this.selectedService.id,
+          date: this.selectedDate,
+          time: this.selectedTime,
+        });
+
+        this.goToStep('confirmation', config);
+      }
     } catch (error) {
-      this.log('Error creating booking', error);
+      this.log('Error submitting form', error);
       this.showError((error as Error).message, () => this.goToStep('form', config));
     }
   }
