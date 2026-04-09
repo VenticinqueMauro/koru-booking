@@ -73,19 +73,23 @@ The widget extends `KoruWidget` from `@redclover/koru-sdk`:
 - **Production mode**: Full Koru SDK authentication and config loading
 - The widget is framework-agnostic (Vanilla JS) and can be embedded anywhere
 
-### 4. Multi-Store Account Hierarchy
+### 4. KoruSuite Integration — One Website per Store
 
-**IMPORTANT**: Accounts follow a parent/child hierarchy for merchants with multiple stores.
+**IMPORTANT**: For backoffice and widget to share the same account, both must use the **same `websiteId`** registered in KoruSuite.
 
-- **Parent account**: the merchant's main account (has services, schedules, real settings). This is the account the backoffice always operates on.
-- **Child accounts**: auto-created when the widget loads on a specific store (VTEX, etc.). They hold the store's `websiteId`/`appId` but no independent data.
+**Correct setup (single store):**
+1. Merchant registers ONE website in KoruSuite for their store domain (e.g. `store.myvtex.com`)
+2. koru-triggers script tag uses that `websiteId`
+3. koru-booking app config inside koru-triggers also uses that same `websiteId`
+4. Backoffice login → Koru returns that `websiteId` in `websites[]` → same account is used
 
-**How it works:**
-- `syncKoruUser` (backoffice login): finds all accounts matching the user's Koru `website_ids`, picks the one with the most activity as parent, and links the rest as children via `parentAccountId`.
-- `dualAuthMiddleware` (widget Koru auth): after finding the store's account, resolves `req.accountId = account.parentAccountId || account.id` so all widget requests hit the parent's data.
-- Result: services, schedules, bookings, and settings are always read from the parent account regardless of which store triggered the request.
+Result: backoffice and widget always read/write the same account. ✓
 
-**Phase 2 (not yet implemented):** Per-store visual overrides (accentColor, triggerText, position) that merge on top of the parent's settings. See PENDING.md.
+**Common mistake — two websites for one store:**
+If the merchant registers separate websites in KoruSuite for different domains (e.g. a demo domain for testing and the real store domain), each creates an isolated account in koru-booking. The backoffice uses one, the widget uses the other, and configs don't sync. The fix is to use a single `websiteId` for the store domain across all apps.
+
+**Multi-store hierarchy (Phase 1 — implemented):**
+For merchants with multiple stores, `dualAuthMiddleware` resolves `req.accountId = account.parentAccountId || account.id`. `syncKoruUser` elects the most active account as parent and links the rest as children via `parentAccountId`. Phase 2 (per-store visual overrides) is pending — see PENDING.md.
 
 ### 5. Backoffice Without Koru SDK
 **IMPORTANT**: The backoffice was recently decoupled from Koru SDK:

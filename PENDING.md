@@ -11,24 +11,14 @@
 - [ ] **UI "Mis Tiendas" en backoffice** — listar las websites del usuario con su estado de vinculación. Mostrar cuál es la cuenta padre y cuáles son instalaciones hijas.
 - [ ] **Overrides visuales por tienda** — permitir que cada store hija tenga su propio `accentColor`, `triggerText` y `triggerPosition`, heredando el resto del padre. Requiere merge logic en `GET /settings`.
 
+> **Nota**: el caso multi-store solo aplica cuando el merchant registra websites distintos en KoruSuite para el mismo dominio/tienda. En el flujo estándar (un website por tienda), backoffice y widget convergen en una sola cuenta automáticamente. Ver sección de integración en CLAUDE.md.
+
 ## Flujo Ecommerce
 
 - [ ] **Test end-to-end** — reserva → pago aprobado → webhook VTEX → confirmar booking → emails. Bloqueado en `catycanarnl1` por pasarela Talo. Repetir en tienda con pasarela estándar.
 - [ ] **WebhookSecret en KoruSuite** — UI no renderiza el campo aún. Pendiente del equipo Koru.
 - [ ] **Credenciales VTEX por tienda** — el Worker no tiene mecanismo para obtenerlas dinámicamente.
 
-## DB — SQL pendiente de ejecutar en Supabase
+## DB — SQL ejecutado en Supabase ✓
 
-Correr en el SQL Editor de Supabase para activar la jerarquía multi-store:
-
-```sql
-ALTER TABLE "Account" ADD COLUMN IF NOT EXISTS "parentAccountId" TEXT;
-
-CREATE INDEX IF NOT EXISTS "Account_parentAccountId_idx" ON "Account"("parentAccountId");
-
-ALTER TABLE "Account" ADD CONSTRAINT IF NOT EXISTS "Account_parentAccountId_fkey"
-  FOREIGN KEY ("parentAccountId") REFERENCES "Account"("id")
-  ON DELETE SET NULL ON UPDATE CASCADE;
-```
-
-Después de ejecutar el SQL, hacer logout + login en el backoffice para que `syncKoruUser` establezca la jerarquía automáticamente.
+La migración de `parentAccountId` fue ejecutada manualmente en Supabase el 2026-04-09.
