@@ -198,11 +198,11 @@ export class ReservationsController {
         return;
       }
 
-      const email = optionalString(req.query.email);
-      const phone = optionalString(req.query.phone);
+      const email = normalizeEmail(optionalString(req.query.email));
+      const phoneTail = phoneLastDigits(optionalString(req.query.phone), 8);
       const document = optionalString(req.query.document);
 
-      if (!email && !phone && !document) {
+      if (!email && !phoneTail && !document) {
         res.status(400).json({ error: 'At least one of email/phone/document is required' });
         return;
       }
@@ -216,30 +216,60 @@ export class ReservationsController {
 
       const account = await prisma.account.findUnique({ where: { websiteId } });
       if (!account) {
+        console.warn('[Match] Account not found for websiteId', { websiteId });
         res.status(404).json({ error: 'Account not found for websiteId' });
         return;
       }
 
-      const orMatchers: Array<Record<string, string>> = [];
-      if (email) orMatchers.push({ customerEmail: email });
-      if (phone) orMatchers.push({ customerPhone: phone });
-      // document match would require schema addition; left for future
-
-      const reservation = await prisma.bookingReservation.findFirst({
-        where: {
-          accountId: account.id,
-          status: 'pending',
-          createdAt: { gte: afterDate },
-          OR: orMatchers,
-        },
-        orderBy: { createdAt: 'desc' },
+      const totalPending = await prisma.bookingReservation.count({
+        where: { accountId: account.id, status: 'pending', createdAt: { gte: afterDate } },
       });
 
+      const orMatchers: Array<Record<string, unknown>> = [];
+      if (email) orMatchers.push({ customerEmail: { equals: email, mode: 'insensitive' } });
+      if (phoneTail) orMatchers.push({ customerPhone: { contains: phoneTail } });
+
+      console.log('[Match] Query', {
+        websiteId,
+        accountId: account.id,
+        email,
+        phoneTail,
+        document,
+        afterDate: afterDate.toISOString(),
+        totalPendingInWindow: totalPending,
+        matchers: orMatchers.length,
+      });
+
+      const reservation = orMatchers.length
+        ? await prisma.bookingReservation.findFirst({
+            where: {
+              accountId: account.id,
+              status: 'pending',
+              createdAt: { gte: afterDate },
+              OR: orMatchers,
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : null;
+
       if (!reservation) {
+        const sample = await prisma.bookingReservation.findMany({
+          where: { accountId: account.id, status: 'pending', createdAt: { gte: afterDate } },
+          orderBy: { createdAt: 'desc' },
+          take: 3,
+          select: { id: true, customerEmail: true, customerPhone: true, createdAt: true },
+        });
+        console.warn('[Match] No match', {
+          accountId: account.id,
+          triedEmail: email,
+          triedPhoneTail: phoneTail,
+          sample,
+        });
         res.status(404).json({ error: 'No matching pending reservation' });
         return;
       }
 
+      console.log('[Match] Found', { reservationId: reservation.id, accountId: account.id });
       res.json({ reservationId: reservation.id });
     } catch (error) {
       console.error('[Match] Error:', error);
@@ -260,6 +290,17 @@ function optionalString(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function normalizeEmail(value: string | undefined): string | undefined {
+  return value ? value.toLowerCase().trim() : undefined;
+}
+
+function phoneLastDigits(value: string | undefined, n: number): string | undefined {
+  if (!value) return undefined;
+  const digits = value.replace(/\D/g, '');
+  if (digits.length < n) return digits || undefined;
+  return digits.slice(-n);
 }
 
 export const reservationsController = new ReservationsController();
