@@ -33,6 +33,10 @@ export function saveReservationToVtexOrderForm(reservationId: string): boolean {
     };
     localStorage.setItem(KORU_TRIGGERS_RESERVATION_KEY, JSON.stringify(payload));
     console.log(`[koru-booking] reservationId "${reservationId}" saved to localStorage for checkout sync`);
+
+    // Notify koru-triggers (running on the same page) so it can sync immediately
+    window.dispatchEvent(new CustomEvent('koru:reservation-created', { detail: payload }));
+
     return true;
   } catch (err) {
     console.warn('[koru-booking] Could not save reservationId to localStorage:', err);
