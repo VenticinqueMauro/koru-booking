@@ -4,6 +4,7 @@ import { ServiceSelector } from './components/ServiceSelector';
 import { DateTimePicker } from './components/DateTimePicker';
 import { CustomerForm, CustomerData } from './components/CustomerForm';
 import { Confirmation } from './components/Confirmation';
+import { saveReservationToVtexOrderForm } from './utils/vtex';
 import './styles/widget.css';
 
 export interface BookingWidgetConfig extends WidgetConfig {
@@ -483,6 +484,9 @@ export class BookingWidget extends KoruWidget {
           date: this.selectedDate,
           time: this.selectedTime,
         });
+
+        // Save reservationId to VTEX orderForm so the Worker can confirm it on payment-approved
+        await saveReservationToVtexOrderForm(this.reservationResult.reservationId);
 
         this.goToStep('ecommerce-confirmation', config);
       } else {
