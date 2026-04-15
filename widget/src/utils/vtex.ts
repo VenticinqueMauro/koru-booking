@@ -1,9 +1,12 @@
 /**
  * VTEX Checkout integration utilities.
  *
- * Saves the koru-booking reservationId into the VTEX orderForm customData so
- * that when the order is placed and payment is approved, the koru-triggers
- * Worker can read it and confirm the reservation.
+ * Saves the koru-booking reservationId into localStorage under the
+ * koru-triggers namespace. koru-triggers picks it up when the user reaches
+ * the checkout page and writes it into the VTEX orderForm customData.
+ *
+ * This avoids the timing problem of trying to PUT to the orderForm on the PDP
+ * (where the orderForm may not yet exist or may change before checkout).
  *
  * One-time store setup required (run once per VTEX account):
  *   POST https://{account}.myvtex.com/api/checkout/pub/orderForm/configuration
@@ -11,96 +14,28 @@
  *   Body: { "apps": [{ "id": "koru-booking", "fields": ["reservationId"], "major": 1 }] }
  */
 
-const VTEX_APP_ID = 'koru-booking';
-const VTEX_FIELD = 'reservationId';
+export const KORU_TRIGGERS_RESERVATION_KEY = 'koru-triggers:pending-reservation';
 
-function getStoreOrigin(): string | null {
-  const { hostname, origin } = window.location;
-  if (
-    hostname.includes('.myvtex.com') ||
-    hostname.includes('.vtexcommercestable.com.br') ||
-    hostname.includes('.vtexcommercebeta.com.br')
-  ) {
-    return origin;
-  }
-  return null;
-}
-
-async function getOrderFormId(): Promise<string | null> {
-  // 1. vtexjs native object (available when checkout.js is loaded)
-  const vtexjs = (window as any).vtexjs;
-  if (vtexjs?.checkout?.orderFormId) {
-    return vtexjs.checkout.orderFormId as string;
-  }
-
-  // 2. checkout.vtex.com cookie
-  const cookie = document.cookie
-    .split(';')
-    .map(c => c.trim())
-    .find(c => c.startsWith('checkout.vtex.com='));
-  if (cookie) {
-    try {
-      const raw = decodeURIComponent(cookie.split('=').slice(1).join('='));
-      const parsed = JSON.parse(raw);
-      if (parsed.orderFormId) return parsed.orderFormId as string;
-    } catch {
-      // ignore
-    }
-  }
-
-  // 3. Public orderForm endpoint
-  const origin = getStoreOrigin();
-  if (!origin) return null;
-
-  try {
-    const res = await fetch(`${origin}/api/checkout/pub/orderForm`, {
-      credentials: 'include',
-    });
-    if (res.ok) {
-      const data = await res.json() as { orderFormId?: string };
-      return data.orderFormId ?? null;
-    }
-  } catch {
-    // ignore
-  }
-
-  return null;
+export interface PendingReservation {
+  appSlug: string;
+  reservationId: string;
 }
 
 /**
- * Saves the reservationId into the current VTEX orderForm's customData.
- * Returns true on success, false if not in a VTEX context or if the call fails.
- * Failure is non-fatal — the reservation is still created; it just won't be
- * auto-confirmed when payment is approved.
+ * Saves the reservationId to localStorage so koru-triggers can sync it
+ * to the VTEX orderForm when the user reaches checkout.
  */
-export async function saveReservationToVtexOrderForm(reservationId: string): Promise<boolean> {
-  const origin = getStoreOrigin();
-  if (!origin) return false;
-
-  const orderFormId = await getOrderFormId();
-  if (!orderFormId) {
-    console.warn('[koru-booking] Could not get VTEX orderFormId — reservationId will not be saved to cart');
-    return false;
-  }
-
+export function saveReservationToVtexOrderForm(reservationId: string): boolean {
   try {
-    const url = `${origin}/api/checkout/pub/orderForm/${orderFormId}/customData/${VTEX_APP_ID}/${VTEX_FIELD}`;
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ value: reservationId }),
-    });
-
-    if (res.ok) {
-      console.log(`[koru-booking] reservationId "${reservationId}" saved to VTEX orderForm ${orderFormId}`);
-      return true;
-    }
-
-    console.warn(`[koru-booking] Failed to save reservationId to VTEX orderForm: ${res.status}`);
-    return false;
+    const payload: PendingReservation = {
+      appSlug: 'koru-booking',
+      reservationId,
+    };
+    localStorage.setItem(KORU_TRIGGERS_RESERVATION_KEY, JSON.stringify(payload));
+    console.log(`[koru-booking] reservationId "${reservationId}" saved to localStorage for checkout sync`);
+    return true;
   } catch (err) {
-    console.warn('[koru-booking] Error saving reservationId to VTEX orderForm:', err);
+    console.warn('[koru-booking] Could not save reservationId to localStorage:', err);
     return false;
   }
 }
