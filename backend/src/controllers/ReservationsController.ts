@@ -1,9 +1,10 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { parseISO, addMinutes } from 'date-fns';
 import { prisma } from '../utils/database.js';
 import { CreateReservationSchema } from '../models/types.js';
 import { ZodError } from 'zod';
 import { DualAuthRequest } from '../middleware/dualAuth.js';
+import { env } from '../config/env.js';
 
 export class ReservationsController {
   async create(req: DualAuthRequest, res: Response): Promise<void> {
@@ -170,6 +171,82 @@ export class ReservationsController {
     }
   }
 
+  /**
+   * Multi-key match endpoint used by koru-triggers Worker as fallback when
+   * no reservationId came through the orderForm (client sync failed: cookie
+   * cleared, device switch, etc). Matches pending reservations by ANY of
+   * email/phone/document within a time window, scoped to a websiteId.
+   *
+   * Auth: x-webhook-secret header, shared secret with koru-triggers Worker.
+   */
+  async match(req: Request, res: Response): Promise<void> {
+    try {
+      const expectedSecret = env.KORU_TRIGGERS_WEBHOOK_SECRET;
+      if (!expectedSecret) {
+        res.status(500).json({ error: 'Match endpoint not configured' });
+        return;
+      }
+
+      if (req.headers['x-webhook-secret'] !== expectedSecret) {
+        res.status(401).json({ error: 'Invalid secret' });
+        return;
+      }
+
+      const websiteId = String(req.query.websiteId ?? '');
+      if (!websiteId) {
+        res.status(400).json({ error: 'websiteId is required' });
+        return;
+      }
+
+      const email = optionalString(req.query.email);
+      const phone = optionalString(req.query.phone);
+      const document = optionalString(req.query.document);
+
+      if (!email && !phone && !document) {
+        res.status(400).json({ error: 'At least one of email/phone/document is required' });
+        return;
+      }
+
+      const after = optionalString(req.query.after);
+      const afterDate = after ? new Date(after) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+      if (isNaN(afterDate.getTime())) {
+        res.status(400).json({ error: 'Invalid "after" timestamp' });
+        return;
+      }
+
+      const account = await prisma.account.findUnique({ where: { websiteId } });
+      if (!account) {
+        res.status(404).json({ error: 'Account not found for websiteId' });
+        return;
+      }
+
+      const orMatchers: Array<Record<string, string>> = [];
+      if (email) orMatchers.push({ customerEmail: email });
+      if (phone) orMatchers.push({ customerPhone: phone });
+      // document match would require schema addition; left for future
+
+      const reservation = await prisma.bookingReservation.findFirst({
+        where: {
+          accountId: account.id,
+          status: 'pending',
+          createdAt: { gte: afterDate },
+          OR: orMatchers,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!reservation) {
+        res.status(404).json({ error: 'No matching pending reservation' });
+        return;
+      }
+
+      res.json({ reservationId: reservation.id });
+    } catch (error) {
+      console.error('[Match] Error:', error);
+      res.status(500).json({ error: 'Error matching reservation' });
+    }
+  }
+
   private async getReservationTTL(accountId: string): Promise<number> {
     const settings = await prisma.widgetSettings.findUnique({
       where: { accountId },
@@ -177,6 +254,12 @@ export class ReservationsController {
     });
     return settings?.reservationTTL ?? 30;
   }
+}
+
+function optionalString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
 }
 
 export const reservationsController = new ReservationsController();

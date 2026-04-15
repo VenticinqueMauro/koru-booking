@@ -36,6 +36,10 @@ const envSchema = z.object({
   // Koru Platform
   KORU_API_URL: z.string().url('KORU_API_URL must be a valid URL').optional(),
 
+  // Shared secret with koru-triggers Worker for /api/reservations/match.
+  // Must equal the Koru Triggers app secret (`config.webhookSecret` in the Worker).
+  KORU_TRIGGERS_WEBHOOK_SECRET: z.string().min(1).optional(),
+
   // CORS
   CORS_ORIGIN: z
     .string()
