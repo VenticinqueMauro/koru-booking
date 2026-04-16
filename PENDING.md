@@ -38,6 +38,20 @@ Usado por el Worker de koru-triggers cuando el sync client-side falla (cookies l
 - [x] `CustomerForm.ts`: phone marcado como `required: true` (campo y validación HTML).
 - [x] `handleSubmit`: valida que phone no esté vacío (error `required`) y luego formato (error `phone`).
 
+### Fix routing backoffice — resuelto ✓
+- [x] Eliminado artefacto de GitHub Pages: `backoffice/public/404.html` borrado (contenía link roto a `/koru-booking/`).
+- [x] `api/client.ts` interceptor 401: reemplazado `window.location.href = \`${basename}/login\`` por `window.location.replace('/login')`.
+- [x] `App.tsx`: agregada ruta catch-all `<Route path="*" element={<Navigate to="/" replace />} />` — evita "Redirecting..." page al refrescar cualquier ruta.
+
+### Fix timezone en tabla Bookings — resuelto ✓
+- [x] `parseDateLocal(isoString)`: construye `new Date(y, m-1, d)` en local midnight. Evita que `parseISO("2026-04-17T00:00:00.000Z")` se desplace al día anterior en zonas UTC-N (UTC-3 Argentina).
+- [x] `isDatetimePast`: usa `dateStr.substring(0, 10)` directamente en comparación string — no depende de timezone.
+- [x] Aplicado en todas las columnas de fecha de `Bookings.tsx` (tabla confirmed y pending).
+
+### Visual "Pasada" en reservas vencidas — resuelto ✓
+- [x] Filas con `isDatetimePast(booking.date, booking.time) === true` reciben `className="bg-muted/30 opacity-60"`.
+- [x] Badge `<Clock> Pasada` debajo de la hora en la columna de fecha.
+
 **Pendiente (post-Sprint 3)**: phone distinto al del checkout VTEX (typo, device switch).
   - Validar formato E.164 en el widget
   - Matchear también por `document` (columna `customerDocument` en `BookingReservation`)
