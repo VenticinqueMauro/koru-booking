@@ -6,6 +6,7 @@ import { reservationsApi } from '../api/reservations';
 import { Booking, BookingReservation } from '../types';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
+
 import { Layout } from '../components/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,15 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle, Clock } from 'lucide-react';
+
+function isDatetimePast(dateStr: string, timeStr: string): boolean {
+  const bookingDay = format(parseISO(dateStr), 'yyyy-MM-dd');
+  const today = format(new Date(), 'yyyy-MM-dd');
+  if (bookingDay < today) return true;
+  if (bookingDay > today) return false;
+  // mismo día: comparar hora
+  return timeStr <= format(new Date(), 'HH:mm');
+}
 
 type Tab = 'confirmed' | 'pending';
 
@@ -182,8 +192,10 @@ export default function Bookings() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      (Array.isArray(bookings) ? bookings : []).map((booking: Booking) => (
-                        <TableRow key={booking.id}>
+                      (Array.isArray(bookings) ? bookings : []).map((booking: Booking) => {
+                        const past = isDatetimePast(booking.date, booking.time);
+                        return (
+                        <TableRow key={booking.id} className={past ? 'bg-muted/30 opacity-60' : ''}>
                           <TableCell>
                             <div>
                               <div className="font-medium">{booking.customerName}</div>
@@ -204,6 +216,12 @@ export default function Bookings() {
                                 {format(parseISO(booking.date), 'EEEE d MMMM yyyy', { locale: es })}
                               </span>
                               <span className="text-sm text-muted-foreground">{booking.time} hs</span>
+                              {past && (
+                                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                  <Clock className="h-3 w-3" />
+                                  Pasada
+                                </span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -227,7 +245,8 @@ export default function Bookings() {
                             )}
                           </TableCell>
                         </TableRow>
-                      ))
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
