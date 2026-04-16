@@ -29,27 +29,19 @@ Usado por el Worker de koru-triggers cuando el sync client-side falla (cookies l
   - Phone: últimos 8 dígitos (strip no-dígitos) con `contains` — tolera prefijos/formatos
 - Logs detallados: `[Match] Query { ... }` y sample de reservas cuando no matchea
 
-## Pendientes UX — admin booking
+## Sprint 3 — UX admin booking ✓ (sesión 2026-04-16)
 
-### Email ofuscado de VTEX
-VTEX devuelve emails anonimizados en OMS (`8a472a27487e4c4ca37242dd16786ca4@ct.vtex.com.br`). El admin de koru-booking muestra este string en la lista de bookings confirmadas (ver screenshot sesión 2026-04-15). **No sirve al admin del negocio.**
+### Email ofuscado de VTEX — resuelto ✓
+- [x] `WebhooksController.handlePaymentApproved`: invertida la prioridad en líneas 58-60 — ahora usa `reservation.customerEmail/Name/Phone` primero y el payload VTEX como fallback. El email real del cliente (ingresado en el widget) se preserva en el `Booking` confirmado.
 
-Opciones a evaluar:
-- [ ] Cuando el webhook confirma una reserva, **preservar el email original** de la reserva pending (que sí es el real, ingresado por el usuario en el widget). No sobrescribirlo con el email VTEX.
-- [ ] Si la confirmación crea un `Booking` nuevo distinto del `BookingReservation`, que el nuevo herede `customerEmail/customerPhone/customerName` de la reserva original, no del payload VTEX.
-- [ ] Mostrar en UI "email registrado por el cliente" separado del "email de compra VTEX" cuando difieran.
+### Teléfono obligatorio en widget — resuelto ✓
+- [x] `CustomerForm.ts`: phone marcado como `required: true` (campo y validación HTML).
+- [x] `handleSubmit`: valida que phone no esté vacío (error `required`) y luego formato (error `phone`).
 
-**Crítico**: cualquier cambio acá NO debe romper el matching actual (Capa 3) que usa email + phone del OMS.
-
-### Teléfono obligatorio en widget
-Por ahora el phone-tail matching es el que salva el flujo cuando email viene ofuscado. Si el phone está vacío en la reserva, Capa 3 falla.
-
-- [ ] **Marcar phone como required** en el formulario del widget (quick win).
-- [ ] **Problema a resolver después**: el user puede cargar phone distinto al del checkout VTEX (typo, cambio de teléfono, compra desde otro device). Ideas:
-  - Validar formato en el widget (regex argentino, normalizar a E.164)
-  - Ofrecer login/OTP pre-reserva para vincular phone verificado
-  - Matchear también por `document` (requiere añadir columna `customerDocument` al schema de `BookingReservation`)
-  - Mostrar confirmación al user: "Reservaste con el teléfono X, el checkout usó Y, ¿confirmás que sos vos?"
+**Pendiente (post-Sprint 3)**: phone distinto al del checkout VTEX (typo, device switch).
+  - Validar formato E.164 en el widget
+  - Matchear también por `document` (columna `customerDocument` en `BookingReservation`)
+  - Login/OTP pre-reserva para vincular phone verificado
 
 ## Multi-store Phase 2 (pendiente de sesión anterior)
 

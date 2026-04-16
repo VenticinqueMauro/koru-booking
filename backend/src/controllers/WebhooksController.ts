@@ -55,9 +55,9 @@ export class WebhooksController {
       return;
     }
 
-    const customerName = event.customer?.name || reservation.customerName || 'Cliente';
-    const customerEmail = event.customer?.email || reservation.customerEmail || '';
-    const customerPhone = event.customer?.phone || reservation.customerPhone || undefined;
+    const customerName = reservation.customerName || event.customer?.name || 'Cliente';
+    const customerEmail = reservation.customerEmail || event.customer?.email || '';
+    const customerPhone = reservation.customerPhone || event.customer?.phone || undefined;
 
     if (!customerEmail) {
       console.warn('[Webhook] No customer email available, booking will be created without email confirmation');

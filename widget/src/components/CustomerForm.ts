@@ -103,7 +103,7 @@ export class CustomerForm {
     form.appendChild(this.createField('email', 'Correo electrónico', 'email', true, 'mail', 'tu@email.com'));
 
     // Campo: Teléfono
-    form.appendChild(this.createField('phone', 'Teléfono', 'tel', false, 'phone', '+54 11 1234-5678'));
+    form.appendChild(this.createField('phone', 'Teléfono', 'tel', true, 'phone', '+54 11 1234-5678'));
 
     // Campo: Notas
     const notesGroup = document.createElement('div');
@@ -196,11 +196,16 @@ export class CustomerForm {
       isValid = false;
     }
 
-    // Validar teléfono (si se proporcionó)
+    // Validar teléfono (requerido)
     const phoneGroup = this.container?.querySelector('[data-field="phone"]');
-    if (phoneGroup && this.formData.phone && !validatePhone(this.formData.phone)) {
-      this.showError(phoneGroup as HTMLElement, ValidationMessages.phone);
-      isValid = false;
+    if (phoneGroup) {
+      if (!this.formData.phone) {
+        this.showError(phoneGroup as HTMLElement, ValidationMessages.required);
+        isValid = false;
+      } else if (!validatePhone(this.formData.phone)) {
+        this.showError(phoneGroup as HTMLElement, ValidationMessages.phone);
+        isValid = false;
+      }
     }
 
     if (isValid) {
