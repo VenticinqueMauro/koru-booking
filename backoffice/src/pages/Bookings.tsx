@@ -21,8 +21,18 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle, Clock } from 'lucide-react';
 
+/**
+ * Parsea la fecha de la API ("2026-04-17T00:00:00.000Z") como fecha LOCAL,
+ * evitando que UTC midnight cruce al día anterior en zonas UTC-N.
+ */
+function parseDateLocal(isoString: string): Date {
+  const [y, m, d] = isoString.substring(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function isDatetimePast(dateStr: string, timeStr: string): boolean {
-  const bookingDay = format(parseISO(dateStr), 'yyyy-MM-dd');
+  // Usar la parte de fecha del ISO string directamente evita la conversión UTC→local
+  const bookingDay = dateStr.substring(0, 10); // "2026-04-17"
   const today = format(new Date(), 'yyyy-MM-dd');
   if (bookingDay < today) return true;
   if (bookingDay > today) return false;
@@ -213,7 +223,7 @@ export default function Bookings() {
                           <TableCell>
                             <div className="flex flex-col">
                               <span className="font-medium">
-                                {format(parseISO(booking.date), 'EEEE d MMMM yyyy', { locale: es })}
+                                {format(parseDateLocal(booking.date), 'EEEE d MMMM yyyy', { locale: es })}
                               </span>
                               <span className="text-sm text-muted-foreground">{booking.time} hs</span>
                               {past && (
@@ -300,7 +310,7 @@ export default function Bookings() {
                           <TableCell>
                             <div className="flex flex-col">
                               <span className="font-medium">
-                                {format(parseISO(res.date), 'EEEE d MMMM yyyy', { locale: es })}
+                                {format(parseDateLocal(res.date), 'EEEE d MMMM yyyy', { locale: es })}
                               </span>
                               <span className="text-sm text-muted-foreground">{res.time} hs</span>
                             </div>
