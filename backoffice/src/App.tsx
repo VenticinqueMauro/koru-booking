@@ -50,6 +50,9 @@ function App() {
               }
             />
 
+            {/* Catch-all: redirect any unknown path to root */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+
             {/* Regular Client Routes */}
             <Route
               path="/dashboard"
