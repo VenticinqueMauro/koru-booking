@@ -19,6 +19,15 @@ export interface BookingWidgetConfig extends WidgetConfig {
   reservationTTL?: number;
 }
 
+export interface OpenFromTriggersOpts {
+  /** IDs de servicios de koru-booking a mostrar (valores de la spec koru_services). */
+  services: string[];
+  /** Llamado cuando el usuario completa la reserva — koru-triggers usa esto para addToCart. */
+  onResolve: () => void;
+  /** Llamado cuando el usuario cierra el modal sin completar el flujo. */
+  onCancel: () => void;
+}
+
 type Step = 'service' | 'datetime' | 'form' | 'confirmation' | 'ecommerce-confirmation';
 
 export class BookingWidget extends KoruWidget {
@@ -35,6 +44,8 @@ export class BookingWidget extends KoruWidget {
   private widgetConfig: BookingWidgetConfig | null = null;
   private isOpen: boolean = false;
   private apiClient!: APIClient;
+  private externalOpenOpts: OpenFromTriggersOpts | null = null;
+  private filteredServicesForModal: Service[] | null = null;
 
   // Componentes
   private serviceSelector: ServiceSelector | null = null;
@@ -293,6 +304,11 @@ export class BookingWidget extends KoruWidget {
   private closeModal(): void {
     if (!this.modalOverlay) return;
 
+    // Si venía de triggers y no completó el flujo → notificar cancel
+    if (this.externalOpenOpts && this.currentStep !== 'ecommerce-confirmation') {
+      this.externalOpenOpts.onCancel();
+    }
+
     this.isOpen = false;
     this.modalOverlay.classList.remove('kb-modal-open');
 
@@ -302,8 +318,13 @@ export class BookingWidget extends KoruWidget {
       }
     }, 300);
 
-    // Restaurar scroll del body
     document.body.style.overflow = '';
+
+    // Limpiar estado externo
+    if (this.externalOpenOpts) {
+      this.externalOpenOpts = null;
+      this.filteredServicesForModal = null;
+    }
   }
 
   private async renderStep(config: BookingWidgetConfig): Promise<void> {
@@ -346,7 +367,7 @@ export class BookingWidget extends KoruWidget {
     switch (this.currentStep) {
       case 'service':
         this.serviceSelector = new ServiceSelector({
-          services: this.services,
+          services: this.filteredServicesForModal ?? this.services,
           accentColor,
           layout: config.layout || 'list',
           onSelect: (service) => this.handleServiceSelect(service, config),
@@ -488,6 +509,9 @@ export class BookingWidget extends KoruWidget {
         // Save reservationId to VTEX orderForm so the Worker can confirm it on payment-approved
         await saveReservationToVtexOrderForm(this.reservationResult.reservationId);
 
+        // Notificar a koru-triggers para que ejecute addToCart
+        this.externalOpenOpts?.onResolve();
+
         this.goToStep('ecommerce-confirmation', config);
       } else {
         this.bookingResult = await this.apiClient.createBooking({
@@ -526,6 +550,8 @@ export class BookingWidget extends KoruWidget {
     this.selectedTime = '';
     this.bookingResult = null;
     this.reservationResult = null;
+    this.externalOpenOpts = null;
+    this.filteredServicesForModal = null;
     this.goToStep('service', config);
   }
 
@@ -598,6 +624,73 @@ export class BookingWidget extends KoruWidget {
     errorContainer.appendChild(closeButton);
 
     this.widgetContainer.appendChild(errorContainer);
+  }
+
+  /**
+   * API pública llamada por koru-triggers cuando el usuario hace click en el CTA
+   * de un producto que requiere booking. Abre el modal directamente, sin necesitar
+   * el botón flotante, y fuerza ecommerceMode.
+   */
+  openFromTriggers(opts: OpenFromTriggersOpts): void {
+    this.externalOpenOpts = opts;
+
+    const filtered = opts.services.length > 0
+      ? this.services.filter(s => opts.services.includes(s.id))
+      : this.services;
+
+    if (filtered.length === 0) {
+      console.warn('[koru-booking] openFromTriggers: ningún servicio coincide con los IDs:', opts.services);
+      opts.onCancel();
+      return;
+    }
+
+    this.filteredServicesForModal = filtered;
+
+    // Auto-seleccionar si hay un solo servicio (salta el paso de selección)
+    if (filtered.length === 1) {
+      this.selectedService = filtered[0];
+      this.currentStep = 'datetime';
+    } else {
+      this.selectedService = null;
+      this.currentStep = 'service';
+    }
+
+    const config: BookingWidgetConfig = {
+      ...(this.config as BookingWidgetConfig),
+      ecommerceMode: true,
+    };
+
+    this.ensureModalCreated(config);
+
+    // Limpiar paso anterior si el modal ya fue usado
+    this.widgetContainer?.querySelector('.kb-step-container')?.remove();
+    this.openModal(config);
+  }
+
+  private ensureModalCreated(config: BookingWidgetConfig): void {
+    if (this.modalOverlay) return;
+
+    this.modalOverlay = this.createElement('div', { className: 'kb-modal-overlay' });
+    this.modalOverlay.style.display = 'none';
+    this.modalOverlay.onclick = (e) => {
+      if (e.target === this.modalOverlay) this.closeModal();
+    };
+
+    const content = this.createElement('div', {
+      className: 'koru-booking-widget kb-modal-content',
+    });
+
+    const closeBtn = this.createElement('button', { className: 'kb-modal-close' });
+    closeBtn.innerHTML = '×';
+    closeBtn.onclick = () => this.closeModal();
+
+    content.appendChild(closeBtn);
+    this.modalOverlay.appendChild(content);
+    document.body.appendChild(this.modalOverlay);
+    this.widgetContainer = content;
+
+    const accentColor = config.accentColor || '#00C896';
+    content.style.setProperty('--kb-accent-color', accentColor);
   }
 
   async onDestroy(): Promise<void> {
