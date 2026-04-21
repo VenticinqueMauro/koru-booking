@@ -634,6 +634,11 @@ export class BookingWidget extends KoruWidget {
   openFromTriggers(opts: OpenFromTriggersOpts): void {
     this.externalOpenOpts = opts;
 
+    // El CTA de VTEX actúa como trigger — el botón flotante es redundante
+    if (this.triggerButton) {
+      this.triggerButton.style.display = 'none';
+    }
+
     const filtered = opts.services.length > 0
       ? this.services.filter(s => opts.services.includes(s.id))
       : this.services;
