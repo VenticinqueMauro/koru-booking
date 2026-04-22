@@ -22,8 +22,8 @@ export interface BookingWidgetConfig extends WidgetConfig {
 export interface OpenFromTriggersOpts {
   /** IDs de servicios de koru-booking a mostrar (valores de la spec koru_services). */
   services: string[];
-  /** Llamado cuando el usuario completa la reserva — koru-triggers usa esto para addToCart. */
-  onResolve: () => void;
+  /** Llamado cuando el usuario completa la reserva — koru-triggers usa esto para addToCart. Debe retornar Promise para poder awaitearlo. */
+  onResolve: () => Promise<void>;
   /** Llamado cuando el usuario cierra el modal sin completar el flujo. */
   onCancel: () => void;
 }
@@ -53,7 +53,7 @@ export class BookingWidget extends KoruWidget {
   private customerForm: CustomerForm | null = null;
   private confirmation: Confirmation | null = null;
 
-  constructor() {
+  constructor(private readonly headless: boolean = false) {
     super({
       name: 'koru-booking',
       version: '1.0.0',
@@ -203,6 +203,10 @@ export class BookingWidget extends KoruWidget {
 
   private renderModalMode(config: BookingWidgetConfig): void {
     console.log('Rendering modal mode...');
+
+    // En modo headless (koru-triggers controla el trigger), no se crea DOM aquí —
+    // ensureModalCreated() lo hará on-demand cuando openFromTriggers() sea llamado.
+    if (this.headless) return;
 
     // Crear botón trigger
     this.triggerButton = this.createElement('button', {
@@ -509,8 +513,14 @@ export class BookingWidget extends KoruWidget {
         // Save reservationId to VTEX orderForm so the Worker can confirm it on payment-approved
         await saveReservationToVtexOrderForm(this.reservationResult.reservationId);
 
-        // Notificar a koru-triggers para que ejecute addToCart
-        this.externalOpenOpts?.onResolve();
+        // Notificar a koru-triggers para que ejecute addToCart y esperar resultado
+        if (this.externalOpenOpts) {
+          try {
+            await this.externalOpenOpts.onResolve();
+          } catch (err) {
+            console.error('[koru-booking] addToCart falló después de reserva exitosa:', err);
+          }
+        }
 
         this.goToStep('ecommerce-confirmation', config);
       } else {
@@ -633,11 +643,6 @@ export class BookingWidget extends KoruWidget {
    */
   openFromTriggers(opts: OpenFromTriggersOpts): void {
     this.externalOpenOpts = opts;
-
-    // El CTA de VTEX actúa como trigger — el botón flotante es redundante
-    if (this.triggerButton) {
-      this.triggerButton.style.display = 'none';
-    }
 
     const filtered = opts.services.length > 0
       ? this.services.filter(s => opts.services.includes(s.id))
