@@ -350,6 +350,7 @@ export class BookingWidget extends KoruWidget {
       className: 'kb-widget-header',
     });
     header.style.backgroundColor = accentColor;
+    const headerTitle = this.currentStep === 'service' ? 'Seleccioná un servicio' : 'Reservar cita';
     header.innerHTML = `
       <svg class="kb-header-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="2.5" y="3.5" width="13" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
@@ -357,7 +358,7 @@ export class BookingWidget extends KoruWidget {
         <path d="M5.5 2V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         <path d="M12.5 2V5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
-      <span class="kb-header-title">Reservar cita</span>
+      <span class="kb-header-title">${headerTitle}</span>
     `;
     this.widgetContainer.appendChild(header);
 
@@ -381,12 +382,17 @@ export class BookingWidget extends KoruWidget {
 
       case 'datetime':
         if (this.selectedService) {
+          // "Atrás" vuelve al selector solo si hay múltiples servicios para elegir;
+          // con un único servicio (auto-seleccionado) no tiene sentido volver al selector.
+          const hasMultipleServices = (this.filteredServicesForModal ?? this.services).length > 1;
           this.dateTimePicker = new DateTimePicker({
             service: this.selectedService,
             accentColor,
             apiClient: this.apiClient,
             onSelect: (date, time) => this.handleDateTimeSelect(date, time, config),
-            onBack: () => this.goToStep('service', config),
+            onBack: hasMultipleServices
+              ? () => this.goToStep('service', config)
+              : () => this.closeModal(),
           });
           await this.dateTimePicker.render(stepContainer);
         }
