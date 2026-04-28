@@ -82,6 +82,35 @@ no coincide (typo, device switch).
 ### Spinner al confirmar usa accentColor — resuelto ✓
 - [x] `widget/src/widget.ts`: `showLoading()` tenía `border-top-color: #0d9488` hardcodeado. Ahora acepta `accentColor?: string` y lo aplica al spinner. Llamada actualizada: `this.showLoading(config.accentColor)`.
 
+## Bug crítico — addToCart no se ejecuta en simultaneo con la reserva (pendiente estudio)
+
+**Prioridad**: Alta — bloquea el flujo CTA intercept end-to-end.
+
+**Síntoma**: Al presionar "Agregar al carrito" en la PDP, koru-booking se abre correctamente y el usuario completa el flujo de reserva. Sin embargo, el ítem **no se agrega al carrito** durante el flujo — el usuario debe volver a presionar el botón después de reservar para que se agregue.
+
+**Comportamiento esperado**: El ítem debe agregarse al carrito en simultaneo con (o inmediatamente después de) confirmar la reserva, sin necesidad de volver a presionar nada. El flujo debería ser transparente para el usuario.
+
+**Flujo actual** (`cta_intercept` en koru-triggers):
+1. koru-triggers intercepta el click en el CTA con `capture: true`
+2. Se inyecta koru-booking en modo headless y se llama `window.KoruBooking.open(opts)`
+3. `opts.onResolve` dispara `addToCartNative(sku, qty)` después de que el usuario confirma la reserva
+4. `addToCartNative` emite un `CustomEvent('addToCart', { bubbles: true })` en formato Pixel SDK VTEX IO
+5. El carrito debería actualizarse — **pero no lo hace en este paso**
+
+**Hipótesis a investigar**:
+- El `CustomEvent('addToCart')` llega pero el pixel-manager de VTEX IO no lo procesa correctamente en el contexto del modal (timing, bubbling, target incorrecto)
+- `onResolve` se llama correctamente (`await`-eado desde Sprint A) pero el evento no tiene el formato exacto que VTEX IO espera en ese momento del ciclo de vida
+- Puede que la API de Checkout de VTEX (`/api/checkout/pub/orderForm/{id}/items`) sea más confiable que el CustomEvent para VTEX IO
+- Evaluar si `vtexjs.checkout.addToCart()` está disponible en el contexto (se descartó antes por un error, revisar si era puntual)
+
+**Archivos involucrados**:
+- `koru-triggers/src/adapters/vtex/RuleEngine.ts` — `handleCtaIntercept`, `addToCartNative`, `notifyVtexCart`
+- `koru-booking/widget/src/widget.ts` — `handleFormSubmit`, llamada a `onResolve()`
+
+**Decisión de diseño pendiente**: ¿el addToCart debe ser síncrono (bloqueante antes de mostrar confirmación) o asíncrono (en paralelo con la confirmación de reserva)? Dado que el usuario ya reservó, lo correcto es que sea async — la reserva no debe fallar si el cart falla, pero el cart sí debe ejecutarse.
+
+---
+
 ## Multi-store Phase 2 (pendiente de sesión anterior)
 
 - [ ] **UI "Mis Tiendas" en backoffice** — listar websites del usuario con estado de vinculación padre/hijos
