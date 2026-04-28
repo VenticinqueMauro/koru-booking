@@ -58,6 +58,7 @@ export interface ReservationRequest {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  customerDocument?: string;
   ttlMinutes?: number;
 }
 

@@ -65,6 +65,7 @@ export const CreateReservationSchema = z.object({
   customerName: z.string().optional(),
   customerEmail: z.string().email().optional(),
   customerPhone: z.string().optional(),
+  customerDocument: z.string().optional(),
   ttlMinutes: z.number().int().min(5).max(1440).optional(),
 });
 

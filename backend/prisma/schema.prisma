@@ -181,10 +181,11 @@ model BookingReservation {
 
   date            DateTime
   time            String   // HH:mm
-  customerName    String?
-  customerEmail   String?
-  customerPhone   String?
-  notes           String?
+  customerName     String?
+  customerEmail    String?
+  customerPhone    String?
+  customerDocument String?
+  notes            String?
   externalOrderId String?  // Se llena cuando el ecommerce asocia un pedido
   status          String   @default("pending") // pending | confirmed | expired | cancelled
   expiresAt       DateTime

@@ -506,6 +506,7 @@ export class BookingWidget extends KoruWidget {
           customerName: data.name,
           customerEmail: data.email,
           customerPhone: data.phone,
+          customerDocument: data.document || undefined,
           ttlMinutes: config.reservationTTL,
         });
 

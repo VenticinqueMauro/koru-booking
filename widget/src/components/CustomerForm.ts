@@ -6,6 +6,7 @@ export interface CustomerData {
   name: string;
   email: string;
   phone?: string;
+  document?: string;
   notes?: string;
 }
 
@@ -26,6 +27,7 @@ export class CustomerForm {
     name: '',
     email: '',
     phone: '',
+    document: '',
     notes: '',
   };
 
@@ -104,6 +106,9 @@ export class CustomerForm {
 
     // Campo: Teléfono
     form.appendChild(this.createField('phone', 'Teléfono', 'tel', true, 'phone', '+54 11 1234-5678'));
+
+    // Campo: Documento
+    form.appendChild(this.createField('document', 'Documento (DNI / CUIT)', 'text', false, 'user', 'Ej: 30123456'));
 
     // Campo: Notas
     const notesGroup = document.createElement('div');

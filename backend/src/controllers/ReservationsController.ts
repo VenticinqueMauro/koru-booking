@@ -75,6 +75,7 @@ export class ReservationsController {
             customerName: validatedData.customerName,
             customerEmail: validatedData.customerEmail,
             customerPhone: validatedData.customerPhone,
+            customerDocument: validatedData.customerDocument,
             status: 'pending',
             expiresAt,
           },
@@ -228,6 +229,7 @@ export class ReservationsController {
       const orMatchers: Array<Record<string, unknown>> = [];
       if (email) orMatchers.push({ customerEmail: { equals: email, mode: 'insensitive' } });
       if (phoneTail) orMatchers.push({ customerPhone: { contains: phoneTail } });
+      if (document) orMatchers.push({ customerDocument: { equals: document } });
 
       console.log('[Match] Query', {
         websiteId,
@@ -257,7 +259,7 @@ export class ReservationsController {
           where: { accountId: account.id, status: 'pending', createdAt: { gte: afterDate } },
           orderBy: { createdAt: 'desc' },
           take: 3,
-          select: { id: true, customerEmail: true, customerPhone: true, createdAt: true },
+          select: { id: true, customerEmail: true, customerPhone: true, customerDocument: true, createdAt: true },
         });
         console.warn('[Match] No match', {
           accountId: account.id,
