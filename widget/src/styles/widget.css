@@ -853,6 +853,7 @@
 
 .kb-day-card.kb-day-selected .kb-day-number {
   font-weight: 700;
+  color: white;
 }
 
 .kb-day-name {
@@ -1154,6 +1155,59 @@
 .kb-form-input-error {
   border-color: var(--kb-danger) !important;
   box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1) !important;
+}
+
+/* Phone prefix wrapper */
+.kb-phone-wrapper {
+  display: flex;
+  align-items: center;
+  border: 2px solid var(--kb-border-subtle);
+  border-radius: var(--kb-radius-md);
+  background: var(--kb-surface);
+  box-shadow: var(--kb-shadow-xs);
+  transition: all var(--kb-transition-base);
+  overflow: hidden;
+}
+
+.kb-phone-wrapper:hover {
+  border-color: var(--kb-border);
+}
+
+.kb-phone-wrapper:focus-within {
+  border-color: var(--kb-accent-color);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--kb-accent-color) 10%, white), var(--kb-shadow-sm);
+}
+
+.kb-phone-wrapper.kb-form-input-error {
+  border-color: var(--kb-danger) !important;
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1) !important;
+}
+
+.kb-phone-prefix {
+  padding: 16px 4px 16px 18px;
+  font-size: 16px;
+  font-family: var(--kb-font-body);
+  color: var(--kb-text-primary);
+  font-weight: 500;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.kb-phone-input {
+  flex: 1;
+  padding: 16px 18px 16px 2px;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  font-family: var(--kb-font-body);
+  color: var(--kb-text-primary);
+  outline: none;
+  min-width: 0;
+}
+
+.kb-phone-input::placeholder {
+  color: var(--kb-text-tertiary);
+  font-size: 15px;
 }
 
 .kb-form-textarea {

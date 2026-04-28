@@ -105,7 +105,7 @@ export class CustomerForm {
     form.appendChild(this.createField('email', 'Correo electrónico', 'email', true, 'mail', 'tu@email.com'));
 
     // Campo: Teléfono
-    form.appendChild(this.createField('phone', 'Teléfono', 'tel', true, 'phone', '+54 11 1234-5678'));
+    form.appendChild(this.createPhoneField());
 
     // Campo: Documento
     form.appendChild(this.createField('document', 'Documento (DNI / CUIT)', 'text', false, 'user', 'Ej: 30123456'));
@@ -146,6 +146,45 @@ export class CustomerForm {
 
     this.container.appendChild(form);
     parent.appendChild(this.container);
+  }
+
+  private createPhoneField(): HTMLElement {
+    const group = document.createElement('div');
+    group.className = 'kb-form-group';
+    group.setAttribute('data-field', 'phone');
+
+    const labelEl = document.createElement('label');
+    labelEl.className = 'kb-form-label';
+    labelEl.innerHTML = `${getIcon('phone')} <span>Teléfono <span class="kb-required">*</span></span>`;
+    group.appendChild(labelEl);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'kb-phone-wrapper';
+
+    const prefix = document.createElement('span');
+    prefix.className = 'kb-phone-prefix';
+    prefix.textContent = '0';
+    wrapper.appendChild(prefix);
+
+    const input = document.createElement('input');
+    input.type = 'tel';
+    input.className = 'kb-phone-input';
+    input.placeholder = '381-36169865';
+    input.oninput = (e) => {
+      const raw = (e.target as HTMLInputElement).value;
+      this.formData.phone = raw ? '0' + raw : '';
+      wrapper.classList.remove('kb-form-input-error');
+      const errorEl = group.querySelector('.kb-form-error') as HTMLElement;
+      if (errorEl) errorEl.textContent = '';
+    };
+    wrapper.appendChild(input);
+    group.appendChild(wrapper);
+
+    const errorEl = document.createElement('div');
+    errorEl.className = 'kb-form-error';
+    group.appendChild(errorEl);
+
+    return group;
   }
 
   private createField(
@@ -205,10 +244,10 @@ export class CustomerForm {
     const phoneGroup = this.container?.querySelector('[data-field="phone"]');
     if (phoneGroup) {
       if (!this.formData.phone) {
-        this.showError(phoneGroup as HTMLElement, ValidationMessages.required);
+        this.showPhoneError(phoneGroup as HTMLElement, ValidationMessages.required);
         isValid = false;
       } else if (!validatePhone(this.formData.phone)) {
-        this.showError(phoneGroup as HTMLElement, ValidationMessages.phone);
+        this.showPhoneError(phoneGroup as HTMLElement, ValidationMessages.phone);
         isValid = false;
       }
     }
@@ -232,9 +271,17 @@ export class CustomerForm {
   private showError(group: HTMLElement, message: string): void {
     const errorEl = group.querySelector('.kb-form-error') as HTMLElement;
     const input = group.querySelector('.kb-form-input') as HTMLInputElement;
-    
+
     if (errorEl) errorEl.textContent = message;
     if (input) input.classList.add('kb-form-input-error');
+  }
+
+  private showPhoneError(group: HTMLElement, message: string): void {
+    const errorEl = group.querySelector('.kb-form-error') as HTMLElement;
+    const wrapper = group.querySelector('.kb-phone-wrapper') as HTMLElement;
+
+    if (errorEl) errorEl.textContent = message;
+    if (wrapper) wrapper.classList.add('kb-form-input-error');
   }
 
   private clearError(group: HTMLElement): void {
