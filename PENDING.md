@@ -54,8 +54,33 @@ Usado por el Worker de koru-triggers cuando el sync client-side falla (cookies l
 
 **Pendiente (post-Sprint 3)**: phone distinto al del checkout VTEX (typo, device switch).
   - Validar formato E.164 en el widget
-  - Matchear también por `document` (columna `customerDocument` en `BookingReservation`)
   - Login/OTP pre-reserva para vincular phone verificado
+
+## Sprint 3.6 — customerDocument en reservas ✓ (sesión 2026-04-28)
+
+Agrega documento del cliente (DNI/CUIT) como campo opcional en el flujo de reserva
+temporal. Permite matchear cuando el email de VTEX OMS llega ofuscado y el teléfono
+no coincide (typo, device switch).
+
+- [x] `schema.prisma`: `customerDocument String?` en `BookingReservation` — aplicado en Supabase vía SQL editor (`ALTER TABLE "BookingReservation" ADD COLUMN "customerDocument" TEXT`)
+- [x] `backend/src/models/types.ts`: `customerDocument` en `CreateReservationSchema` (Zod, opcional)
+- [x] `backend/src/controllers/ReservationsController.ts`: persiste `customerDocument` al crear + lo agrega como tercer matcher en `match()` (`customerDocument: { equals: document }`)
+- [x] `widget/src/api/client.ts`: `customerDocument?: string` en `ReservationRequest`
+- [x] `widget/src/components/CustomerForm.ts`: campo "Documento (DNI / CUIT)" opcional entre teléfono y notas
+- [x] `widget/src/widget.ts`: envía `customerDocument: data.document || undefined` en `createReservation()`
+
+**Nota DB**: migración ejecutada manualmente en Supabase (no via `prisma migrate dev` — usar SQL editor directo + `prisma generate` local).
+
+## UI fixes widget ✓ (sesión 2026-04-28)
+
+### Texto negro en fecha seleccionada — resuelto ✓
+- [x] `widget/src/styles/widget.css`: agregado `color: white` a `.kb-day-card.kb-day-selected .kb-day-number`. El bug: `.kb-day-number` tenía `color: var(--kb-text-primary)` explícito que ganaba sobre el `color: white` heredado del estado selected; el selector específico no lo sobreescribía.
+
+### Campo teléfono con prefijo "0" — resuelto ✓
+- [x] `widget/src/components/CustomerForm.ts`: reemplazado el `createField('phone', ...)` genérico por `createPhoneField()` que renderiza un wrapper flex con "0" estático + input para el resto. `formData.phone = "0" + input.value`. El matching con VTEX no cambia (usa últimos 8 dígitos, strips non-digits). CSS: `.kb-phone-wrapper`, `.kb-phone-prefix`, `.kb-phone-input` en `widget.css`.
+
+### Spinner al confirmar usa accentColor — resuelto ✓
+- [x] `widget/src/widget.ts`: `showLoading()` tenía `border-top-color: #0d9488` hardcodeado. Ahora acepta `accentColor?: string` y lo aplica al spinner. Llamada actualizada: `this.showLoading(config.accentColor)`.
 
 ## Multi-store Phase 2 (pendiente de sesión anterior)
 
