@@ -60,3 +60,6 @@ coverage/
 !**/assets/**/*.png
 !**/assets/**/*.jpg
 !**/assets/**/*.jpeg
+!**/public/**/*.png
+!**/public/**/*.jpg
+!**/public/**/*.jpeg
