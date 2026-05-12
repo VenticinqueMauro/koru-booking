@@ -140,6 +140,54 @@ export class KoruService {
     }
 
     /**
+     * Exchange an OAuth authorization code for a Koru access token.
+     * Uses the /api/auth/token endpoint (Authorization Code Flow + PKCE).
+     *
+     * Unlike loginUser (ROPG, password-only), this works for users who
+     * signed up with Google or any other identity provider configured in
+     * KoruSuite/Auth0 — no password required.
+     *
+     * Response shape matches loginUser intentionally so the caller path
+     * (sync, JWT issuance) is unchanged.
+     */
+    async exchangeAuthCode(code: string, codeVerifier: string): Promise<KoruLoginResponse | null> {
+        try {
+            const response = await axios.post<KoruLoginResponse>(
+                `${this.koruApiUrl}/api/auth/token`,
+                {
+                    grant_type: 'authorization_code',
+                    code,
+                    code_verifier: codeVerifier,
+                    app_id: this.koruAppId,
+                },
+                {
+                    headers: {
+                        'X-App-ID': this.koruAppId,
+                        'X-App-Secret': this.koruAppSecret,
+                        'Content-Type': 'application/json',
+                    },
+                    timeout: 10000,
+                }
+            );
+
+            return response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response?.status === 400) {
+                    console.error('Koru exchange failed: invalid or expired code');
+                } else if (error.response?.status === 401) {
+                    console.error('Koru exchange failed: invalid app credentials');
+                } else {
+                    console.error('Koru API error:', error.message);
+                }
+            } else {
+                console.error('Koru exchange error:', error);
+            }
+            return null;
+        }
+    }
+
+    /**
      * Login user with Koru credentials (username/password)
      * Uses the /api/auth/login endpoint (Identity Broker)
      */

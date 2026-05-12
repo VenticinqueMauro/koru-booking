@@ -14,6 +14,16 @@ export const authApi = {
         return response;
     },
 
+    // OAuth callback exchange — canjea el code recibido de KoruSuite por el JWT.
+    // Soporta cualquier método de login configurado en Auth0 (Google, password, etc.).
+    oauthCallback: async (code: string, codeVerifier: string): Promise<LoginResponse> => {
+        const response = await apiClient.post<any, LoginResponse>('/auth/oauth/callback', {
+            code,
+            code_verifier: codeVerifier,
+        });
+        return response;
+    },
+
     // Verify current token
     verify: async (): Promise<any> => {
         const response = await apiClient.get('/auth/verify');

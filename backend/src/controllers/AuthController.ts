@@ -133,6 +133,92 @@ export class AuthController {
     }
 
     /**
+     * OAuth Authorization Code + PKCE callback.
+     *
+     * The backoffice frontend, after returning from KoruSuite's
+     * /api/auth/callback with a short-lived `code`, posts here. We exchange
+     * the code (server-to-server with our app credentials) for the full Koru
+     * access_token and then run the same userSyncService.syncKoruUser path
+     * that koruLogin uses, so users created via Google get the local Account
+     * + User rows just like email/password users.
+     */
+    async oauthCallback(req: Request, res: Response): Promise<void> {
+        try {
+            const { code, code_verifier } = req.body ?? {};
+            if (!code || !code_verifier) {
+                res.status(400).json({
+                    success: false,
+                    error: 'code and code_verifier are required'
+                });
+                return;
+            }
+
+            const koruResponse = await koruService.exchangeAuthCode(code, code_verifier);
+            if (!koruResponse || !koruResponse.access_token) {
+                res.status(401).json({
+                    success: false,
+                    error: 'Could not complete OAuth login'
+                });
+                return;
+            }
+
+            const syncedUser = await userSyncService.syncKoruUser(
+                koruResponse.access_token,
+                {
+                    userInfo: koruResponse.user,
+                    appId: koruResponse.app_id,
+                    websites: koruResponse.websites,
+                },
+                koruResponse.user.email
+            );
+
+            if (!syncedUser) {
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to sync user. Please contact support.'
+                });
+                return;
+            }
+
+            const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+            const token = jwt.sign(
+                {
+                    userId: syncedUser.user.id,
+                    accountId: syncedUser.account?.id,
+                    websiteId: syncedUser.account?.websiteId,
+                    role: syncedUser.user.role,
+                    koruUserId: syncedUser.user.koruUserId,
+                    koruToken: koruResponse.access_token,
+                    koruTokenExpiresAt: koruResponse.expires_at,
+                },
+                jwtSecret,
+                { expiresIn: '24h' }
+            );
+
+            res.json({
+                success: true,
+                token,
+                user: {
+                    id: syncedUser.user.id,
+                    email: syncedUser.user.email,
+                    username: syncedUser.user.username,
+                    name: syncedUser.user.name,
+                    role: syncedUser.user.role,
+                },
+                account: syncedUser.account,
+                availableWebsites: syncedUser.availableWebsites,
+                koruTokenExpiresAt: koruResponse.expires_at,
+            });
+        } catch (error) {
+            console.error('OAuth callback error:', error);
+            res.status(500).json({
+                success: false,
+                error: error instanceof Error ? error.message : 'OAuth login failed'
+            });
+        }
+    }
+
+    /**
      * Verify token endpoint
      */
     async verify(req: Request, res: Response): Promise<void> {

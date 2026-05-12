@@ -9,6 +9,11 @@ router.post('/login', (req, res) => authController.login(req, res));
 // POST /api/auth/koru-login - Login with Koru username/password (Identity Broker)
 router.post('/koru-login', (req, res) => authController.koruLogin(req, res));
 
+// POST /api/auth/oauth/callback - OAuth Authorization Code + PKCE callback.
+// Used by the backoffice to exchange the short-lived code (returned by
+// KoruSuite /api/auth/callback) for the full session JWT. Enables Google login.
+router.post('/oauth/callback', (req, res) => authController.oauthCallback(req, res));
+
 // GET /api/auth/verify - Verify JWT token
 router.get('/verify', (req, res) => authController.verify(req, res));
 

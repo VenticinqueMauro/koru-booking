@@ -5,6 +5,7 @@ import type { AuthState, KoruCredentials, EmailPasswordCredentials, UsernamePass
 interface AuthContextType extends AuthState {
     login: (credentials: KoruCredentials | EmailPasswordCredentials) => Promise<void>;
     koruLogin: (credentials: UsernamePasswordCredentials) => Promise<void>;
+    finishOauthLogin: (code: string, codeVerifier: string) => Promise<void>;
     logout: () => void;
     isLoading: boolean;
     isAdmin: boolean; // Computed from user.role
@@ -131,6 +132,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
+    const finishOauthLogin = async (code: string, codeVerifier: string) => {
+        try {
+            const response = await authApi.oauthCallback(code, codeVerifier);
+
+            if (!response.success) {
+                throw new Error('Login failed');
+            }
+
+            const newState: AuthState = {
+                isAuthenticated: true,
+                token: response.token,
+                account: response.account || null,
+                user: response.user || null,
+                availableWebsites: response.availableWebsites,
+                koruTokenExpiresAt: response.koruTokenExpiresAt,
+            };
+
+            setAuthState(newState);
+            localStorage.setItem(TOKEN_KEY, response.token);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                account: newState.account,
+                user: newState.user,
+                availableWebsites: newState.availableWebsites,
+                koruTokenExpiresAt: newState.koruTokenExpiresAt,
+            }));
+        } catch (error: any) {
+            console.error('OAuth login error:', error);
+            throw new Error(error.response?.data?.error || 'OAuth login failed');
+        }
+    };
+
     const logout = () => {
         // Clear state
         setAuthState({
@@ -151,7 +183,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     return (
-        <AuthContext.Provider value={{ ...authState, login, koruLogin, logout, isLoading, isAdmin, hasMultipleWebsites }}>
+        <AuthContext.Provider value={{ ...authState, login, koruLogin, finishOauthLogin, logout, isLoading, isAdmin, hasMultipleWebsites }}>
             {children}
         </AuthContext.Provider>
     );
