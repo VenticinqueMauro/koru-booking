@@ -653,12 +653,14 @@ export class BookingWidget extends KoruWidget {
   openFromTriggers(opts: OpenFromTriggersOpts): void {
     this.externalOpenOpts = opts;
 
+    const norm = (v: string) => v.trim().toLowerCase();
+    const wanted = opts.services.map(norm);
     const filtered = opts.services.length > 0
-      ? this.services.filter(s => opts.services.includes(s.id))
+      ? this.services.filter(s => wanted.includes(s.id.toLowerCase()) || wanted.includes(norm(s.name)))
       : this.services;
 
     if (filtered.length === 0) {
-      console.warn('[koru-booking] openFromTriggers: ningún servicio coincide con los IDs:', opts.services);
+      console.warn('[koru-booking] openFromTriggers: ningún servicio coincide (por id o nombre):', opts.services);
       opts.onCancel();
       return;
     }
